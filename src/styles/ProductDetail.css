@@ -1,0 +1,273 @@
+/* Product Detail Styles */
+.product-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  transition: color 0.3s ease;
+}
+
+.btn-back:hover {
+  color: #5568d3;
+  text-decoration: underline;
+}
+
+.product-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.product-detail-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.product-detail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-width: 100%;
+}
+
+.no-image {
+  color: #ccc;
+  font-size: 1rem;
+}
+
+.product-detail-info h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  color: #333;
+}
+
+.product-set-name {
+  color: #999;
+  font-size: 1rem;
+  margin: 0 0 1rem 0;
+}
+
+/* Rating Section */
+.rating-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stars {
+  font-size: 1.3rem;
+  color: #ffc107;
+}
+
+.rating-value {
+  font-weight: bold;
+  color: #333;
+}
+
+.review-count {
+  color: #999;
+}
+
+/* Price Section */
+.price-section {
+  margin-bottom: 1.5rem;
+}
+
+.price {
+  font-size: 2rem;
+  color: #667eea;
+  margin: 0;
+}
+
+/* Description */
+.description {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.description h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.description p {
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Details Section */
+.details-section {
+  margin-bottom: 2rem;
+}
+
+.details-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.details-section dl {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 1rem;
+  color: #666;
+}
+
+.details-section dt {
+  font-weight: 600;
+  color: #333;
+}
+
+.details-section dd {
+  margin: 0;
+}
+
+.details-section dd.in-stock {
+  color: #27ae60;
+  font-weight: 500;
+}
+
+.details-section dd.out-of-stock {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+/* Add to Cart Section */
+.add-to-cart-section {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.add-to-cart-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.add-to-cart-section input {
+  width: 80px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.btn-add-to-cart-large {
+  flex: 1;
+  padding: 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-add-to-cart-large:hover {
+  background: #5568d3;
+}
+
+.btn-add-to-cart-large:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Reviews Section */
+.reviews-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.reviews-section h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.login-prompt {
+  background: #e8f4f8;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.login-prompt a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-prompt a:hover {
+  text-decoration: underline;
+}
+
+.no-reviews {
+  color: #999;
+  font-style: italic;
+  padding: 1rem;
+}
+
+.not-found {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .product-detail {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .product-detail-image {
+    min-height: 300px;
+  }
+
+  .product-detail-info h1 {
+    font-size: 1.5rem;
+  }
+
+  .price {
+    font-size: 1.5rem;
+  }
+
+  .details-section dl {
+    grid-template-columns: 120px 1fr;
+  }
+
+  .add-to-cart-section {
+    flex-direction: column;
+  }
+
+  .add-to-cart-section input {
+    width: 100%;
+  }
+}
