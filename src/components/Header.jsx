@@ -28,7 +28,7 @@ export default function Header() {
     <header className="header">
       <div className="header-content">
         <Link to="/" className="logo">
-          <h1>ChubbSellz</h1>
+          <h1>Chubb Rips</h1>
         </Link>
 
         <nav className="nav-menu">
