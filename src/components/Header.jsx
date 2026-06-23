@@ -55,12 +55,6 @@ export default function Header() {
             Cart
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </Link>
-          <Link
-            to="/admin"
-            className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}
-          >
-            Admin
-          </Link>
         </nav>
 
         <div className="header-user">
