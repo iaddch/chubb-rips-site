@@ -78,26 +78,22 @@
   color: white;
   text-decoration: none;
   font-size: 1rem;
-  padding: 0.5rem 0;
+  padding: 0.35rem 0.6rem;
   position: relative;
-  transition: opacity 0.3s ease;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
 .nav-link:hover {
-  opacity: 1;
-  color: #ffffff;
   background: rgba(0, 0, 0, 0.16);
-  border-radius: 6px;
-  text-decoration: none;
-  padding: 0.5rem 0.7rem;
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
 .nav-link.active {
-  border-bottom: 2px solid white;
   font-weight: bold;
 }
 

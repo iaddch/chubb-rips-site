@@ -85,9 +85,10 @@
 }
 
 .products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
+  align-items: stretch;
 }
 
 .product-card {
@@ -98,6 +99,9 @@
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
+  flex: 1 1 220px;
+  max-width: calc(33.333% - 1rem);
+  min-width: 220px;
   height: 100%;
 }
 
@@ -231,8 +235,13 @@
   }
 
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 1rem;
+  }
+
+  .product-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .catalog-container h1 {
