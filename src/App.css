@@ -10,8 +10,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f7fa;
-  color: #333;
+  background-color: var(--surface-soft);
+  color: var(--text);
 }
 
 #root {
@@ -34,8 +34,7 @@ body {
 }
 
 .footer {
-  background: #333;
-  color: white;
+  background: var(--primary);
   text-align: center;
   padding: 2rem 1rem;
   margin-top: 2rem;
@@ -52,20 +51,20 @@ button {
 
 /* Links */
 a {
-  color: #667eea;
+  color: var(--primary);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 a:hover {
-  color: #5568d3;
+  color: var(--accent);
 }
 
 /* Utilities */
 .loading {
   text-align: center;
   padding: 2rem;
-  color: #999;
+  color: var(--text-muted);
   font-size: 1rem;
 }
 

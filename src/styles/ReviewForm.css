@@ -20,23 +20,25 @@
 .rating-select,
 .review-form textarea {
   width: 100%;
+  min-height: 48px;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 16px;
   font-family: inherit;
 }
 
 .rating-select:focus,
 .review-form textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(48, 65, 96, 0.12);
 }
 
 .btn-submit-review {
+  min-height: 48px;
   padding: 0.75rem 1.5rem;
-  background: #667eea;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -47,7 +49,7 @@
 }
 
 .btn-submit-review:hover {
-  background: #5568d3;
+  background: var(--accent);
 }
 
 .btn-submit-review:disabled {
@@ -66,7 +68,7 @@
   background: white;
   padding: 1.5rem;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--primary);
 }
 
 .review-header {

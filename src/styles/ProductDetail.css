@@ -1,14 +1,15 @@
 /* Product Detail Styles */
 .product-detail-container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 1rem;
 }
 
 .btn-back {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--primary);
   font-size: 1rem;
   cursor: pointer;
   padding: 0.5rem;
@@ -17,17 +18,17 @@
 }
 
 .btn-back:hover {
-  color: #5568d3;
+  color: var(--accent);
   text-decoration: underline;
 }
 
 .product-detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  margin-bottom: 3rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -36,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: var(--surface-soft);
   border-radius: 8px;
   overflow: hidden;
   min-height: 400px;
@@ -57,11 +58,11 @@
 .product-detail-info h1 {
   margin: 0 0 0.5rem 0;
   font-size: 2rem;
-  color: #333;
+  color: var(--text);
 }
 
 .product-set-name {
-  color: #999;
+  color: var(--text-muted);
   font-size: 1rem;
   margin: 0 0 1rem 0;
 }
@@ -95,7 +96,7 @@
 
 .price {
   font-size: 2rem;
-  color: #667eea;
+  color: var(--primary);
   margin: 0;
 }
 
@@ -168,16 +169,18 @@
 
 .add-to-cart-section input {
   width: 80px;
+  min-height: 48px;
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 16px;
 }
 
 .btn-add-to-cart-large {
   flex: 1;
+  min-height: 48px;
   padding: 1rem;
-  background: #667eea;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -188,7 +191,7 @@
 }
 
 .btn-add-to-cart-large:hover {
-  background: #5568d3;
+  background: var(--accent);
 }
 
 .btn-add-to-cart-large:disabled {
@@ -217,7 +220,7 @@
 }
 
 .login-prompt a {
-  color: #667eea;
+  color: var(--primary);
   text-decoration: none;
   font-weight: bold;
 }
@@ -227,7 +230,7 @@
 }
 
 .no-reviews {
-  color: #999;
+  color: var(--text-muted);
   font-style: italic;
   padding: 1rem;
 }
@@ -241,9 +244,13 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .product-detail-container {
+    padding: 0.75rem;
+  }
+
   .product-detail {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
     padding: 1rem;
   }
 

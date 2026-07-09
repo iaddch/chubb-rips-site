@@ -12,6 +12,7 @@ export default function Header() {
   const cartCount = getItemCount()
   const { setFilters, filters } = useProductStore()
   const [searchTerm, setSearchTerm] = React.useState(filters?.search || '')
+  const [menuOpen, setMenuOpen] = React.useState(false)
 
   React.useEffect(() => {
     const t = setTimeout(() => setFilters({ search: searchTerm }), 350)
@@ -31,7 +32,18 @@ export default function Header() {
           <h1>Chubb's Vault</h1>
         </Link>
 
-        <nav className="nav-menu">
+        <button
+          className="menu-toggle"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label="Toggle navigation menu"
+          aria-expanded={menuOpen}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <nav className={`nav-menu ${menuOpen ? 'open' : ''}`}>
           <div className="header-search">
             <input
               type="search"
@@ -45,6 +57,7 @@ export default function Header() {
           <Link
             to="/"
             className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
+            onClick={() => setMenuOpen(false)}
           >
             Shop
           </Link>
@@ -55,6 +68,7 @@ export default function Header() {
               rel="noopener noreferrer"
               className="social-link"
               aria-label="Follow us on Instagram"
+              onClick={() => setMenuOpen(false)}
             >
               <span className="instagram-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">

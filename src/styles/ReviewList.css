@@ -6,10 +6,10 @@
 }
 
 .review-item {
-  background: #f8f9fa;
+  background: var(--surface-soft);
   padding: 1.25rem;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--primary);
 }
 
 .review-header {

@@ -1,15 +1,20 @@
 :root {
-  --primary: #667eea;
-  --primary-dark: #5568d3;
-  --secondary: #764ba2;
-  --success: #27ae60;
-  --danger: #e74c3c;
-  --warning: #f39c12;
-  --info: #3498db;
-  --dark: #333;
+  --primary: #304160;
+  --primary-dark: #243448;
+  --secondary: #a8b8c8;
+  --accent: #a82028;
+  --accent-highlight: #c85048;
+  --success: #2f855a;
+  --danger: #c53030;
+  --warning: #dd6b20;
+  --info: #4a5568;
+  --dark: #1a202c;
   --light: #f8f9fa;
-  --border: #eee;
-  --text: #666;
+  --surface: #ffffff;
+  --surface-soft: #f7f9fc;
+  --border: #d9e2ec;
+  --text: #1a202c;
+  --text-muted: #4a5568;
 }
 
 * {
@@ -32,8 +37,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f7fa;
-  color: #333;
+  background-color: var(--surface-soft);
+  color: var(--text);
   line-height: 1.6;
 }
 
@@ -51,7 +56,7 @@ h3,
 h4,
 h5,
 h6 {
-  color: #333;
+  color: var(--dark);
   font-weight: 600;
   line-height: 1.2;
 }
@@ -79,7 +84,7 @@ a {
 }
 
 a:hover {
-  color: var(--primary-dark);
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -102,19 +107,19 @@ pre {
 /* Responsive Typography */
 @media (max-width: 768px) {
   h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
   }
 
   h3 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
   body {
-    font-size: 14px;
+    font-size: 15px;
   }
 }
 
