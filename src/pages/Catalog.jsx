@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { productsService } from '../services/supabaseService'
-import { useProductStore, useCartStore } from '../store/index'
+import { useProductStore } from '../store/index'
 import '../styles/Catalog.css'
 
 export default function Catalog() {
   const navigate = useNavigate()
   const { products, loading, filters, setProducts, setLoading, setFilters } =
     useProductStore()
-  const { addItem } = useCartStore()
   const [filteredProducts, setFilteredProducts] = useState([])
 
   useEffect(() => {
@@ -51,15 +50,6 @@ export default function Catalog() {
 
     setFilteredProducts(filtered)
   }, [products, filters])
-
-  const handleAddToCart = (product) => {
-    if (product.stock_quantity <= 0) {
-      alert('This item is out of stock')
-      return
-    }
-    addItem(product, 1)
-    alert('Added to cart!')
-  }
 
   if (loading) return <div className="loading">Loading products...</div>
 
@@ -153,13 +143,6 @@ export default function Catalog() {
                         onClick={() => navigate(`/product/${product.id}`)}
                       >
                         View Details
-                      </button>
-                      <button
-                        className="btn-add-cart"
-                        onClick={() => handleAddToCart(product)}
-                        disabled={product.stock_quantity <= 0}
-                      >
-                        Add to Cart
                       </button>
                     </div>
                   </div>

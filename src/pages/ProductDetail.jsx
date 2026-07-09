@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { productsService, reviewsService } from '../services/supabaseService'
-import { useAuthStore, useCartStore } from '../store/index'
+import { useAuthStore } from '../store/index'
 import ReviewList from '../components/ReviewList'
 import ReviewForm from '../components/ReviewForm'
 import '../styles/ProductDetail.css'
@@ -10,7 +10,6 @@ export default function ProductDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { addItem } = useCartStore()
   const [product, setProduct] = useState(null)
   const [reviews, setReviews] = useState([])
   const [averageRating, setAverageRating] = useState(0)
@@ -37,15 +36,6 @@ export default function ProductDetail() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleAddToCart = () => {
-    if (product.stock_quantity < quantity) {
-      alert('Not enough stock available')
-      return
-    }
-    addItem(product, quantity)
-    alert(`Added ${quantity} to cart!`)
   }
 
   const handleReviewAdded = () => {
@@ -122,27 +112,6 @@ export default function ProductDetail() {
             </dl>
           </div>
 
-          {/* Add to Cart */}
-          <div className="add-to-cart-section">
-            <label>
-              Quantity:
-              <input
-                type="number"
-                min="1"
-                max={product.stock_quantity || 1}
-                value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                disabled={product.stock_quantity === 0}
-              />
-            </label>
-            <button
-              className="btn-add-to-cart-large"
-              onClick={handleAddToCart}
-              disabled={product.stock_quantity === 0}
-            >
-              Add to Cart
-            </button>
-          </div>
         </div>
       </div>
 
