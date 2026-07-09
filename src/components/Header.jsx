@@ -28,7 +28,7 @@ export default function Header() {
     <header className="header">
       <div className="header-content">
         <Link to="/" className="logo">
-          <h1>Chubb Rips</h1>
+          <h1>Chubb's Vault</h1>
         </Link>
 
         <nav className="nav-menu">
@@ -48,29 +48,7 @@ export default function Header() {
           >
             Shop
           </Link>
-          <Link
-            to="/cart"
-            className={`nav-link cart-link ${location.pathname === '/cart' ? 'active' : ''}`}
-          >
-            Cart
-            {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-          </Link>
         </nav>
-
-        <div className="header-user">
-          {user ? (
-            <div className="user-info">
-              <span className="user-email">{user.email}</span>
-              <button onClick={handleLogout} className="btn-logout">
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link to="/login" className="btn-login">
-              Sign In
-            </Link>
-          )}
-        </div>
       </div>
     </header>
   )
