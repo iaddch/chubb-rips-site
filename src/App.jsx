@@ -57,9 +57,6 @@ export default function App() {
             <Route path="/login" element={<Login />} />
           </Routes>
         </main>
-        <footer className="footer">
-          <p>&copy; 2024 Pokémart. All rights reserved.</p>
-        </footer>
       </div>
     </Router>
   )
