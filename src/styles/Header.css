@@ -117,6 +117,15 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.admin-login-link {
+  opacity: 0.9;
+  font-size: 0.95rem;
 }
 
 .nav-link:hover {
@@ -240,5 +249,9 @@
     padding: 0.8rem 1rem;
     font-size: 0.95rem;
     min-height: 48px;
+  }
+
+  .admin-login-link {
+    width: 100%;
   }
 }

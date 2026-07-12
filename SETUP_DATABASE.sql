@@ -29,6 +29,23 @@ CREATE TABLE IF NOT EXISTS reviews (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Events table - used by the admin sales dashboard
+CREATE TABLE IF NOT EXISTS events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Sales table - stores product line items for a specific event
+CREATE TABLE IF NOT EXISTS sales (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  items JSONB NOT NULL DEFAULT '[]'::JSONB
+);
+
 -- Cart items table - shopping cart items
 CREATE TABLE IF NOT EXISTS cart_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,6 +94,8 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 -- Enable Row Level Security (important for production)
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
@@ -90,6 +109,15 @@ CREATE POLICY "Public can read products"
 DROP POLICY IF EXISTS "Public can read reviews" ON reviews;
 CREATE POLICY "Public can read reviews" 
   ON reviews FOR SELECT USING (true);
+
+-- Policies for events and sales (permissive for the demo/admin dashboard)
+DROP POLICY IF EXISTS "Allow all access to events" ON events;
+CREATE POLICY "Allow all access to events"
+  ON events FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all access to sales" ON sales;
+CREATE POLICY "Allow all access to sales"
+  ON sales FOR ALL USING (true) WITH CHECK (true);
 
 -- Policies for cart (users can only access their own cart)
 DROP POLICY IF EXISTS "Users can manage their cart" ON cart_items;

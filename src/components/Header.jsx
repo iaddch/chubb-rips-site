@@ -11,11 +11,21 @@ export default function Header() {
   const { user, setUser } = useAuthStore()
   const cartCount = getItemCount()
   const [menuOpen, setMenuOpen] = React.useState(false)
+  const [isAdmin, setIsAdmin] = React.useState(false)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setUser(null)
     navigate('/')
+  }
+
+  const handleAdminLogin = () => {
+    const enteredPassword = window.prompt('Enter admin password')
+
+    if (enteredPassword === 'Venezuela12?') {
+      setIsAdmin(true)
+      navigate('/sales')
+    }
   }
 
   return (
@@ -64,6 +74,24 @@ export default function Header() {
           >
             Shop
           </Link>
+
+          {isAdmin && (
+            <Link
+              to="/sales"
+              className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              Sales
+            </Link>
+          )}
+
+          <button
+            type="button"
+            className="nav-link admin-login-link"
+            onClick={handleAdminLogin}
+          >
+            Admin Login
+          </button>
         </nav>
       </div>
     </header>

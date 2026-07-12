@@ -10,6 +10,7 @@ import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
 import ThankYou from './pages/ThankYou'
 import Login from './pages/Login'
+import SalesPage from './pages/SalesPage'
 import './App.css'
 
 export default function App() {
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/sales" element={<SalesPage />} />
           </Routes>
         </main>
       </div>
