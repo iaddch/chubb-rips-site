@@ -8,6 +8,7 @@ const initialItem = () => ({
   quantity: 1,
   bought_price: '',
   sold_price: '',
+  inventory_id: null,
 })
 
 const initialEventForm = () => ({
@@ -30,6 +31,8 @@ export default function SalesPage() {
   const [saleSuccess, setSaleSuccess] = useState('')
   const [sales, setSales] = useState([])
   const [editingSaleId, setEditingSaleId] = useState(null)
+  const [inventoryItems, setInventoryItems] = useState([])
+  const [inventoryQuery, setInventoryQuery] = useState('')
 
   const fetchEvents = async () => {
     const { data, error } = await supabase.from('events').select('*').order('date', { ascending: true })
@@ -61,6 +64,17 @@ export default function SalesPage() {
     }
   }, [selectedEvent])
 
+  const fetchInventory = async () => {
+    const { data, error: inventoryError } = await supabase.from('inventory').select('*').gt('qty', 0).order('name', { ascending: true })
+    if (!inventoryError) {
+      setInventoryItems(data || [])
+    }
+  }
+
+  useEffect(() => {
+    fetchInventory()
+  }, [])
+
   const handleCreateEvent = async (e) => {
     e.preventDefault()
     setEventLoading(true)
@@ -90,6 +104,22 @@ export default function SalesPage() {
     setSaleItems((current) =>
       current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item))
     )
+  }
+
+  const handleInventorySelect = (index, inventoryItem) => {
+    setSaleItems((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item
+
+        return {
+          ...item,
+          product_name: inventoryItem.name,
+          bought_price: String(inventoryItem.price_bought_at ?? 0),
+          inventory_id: inventoryItem.id,
+        }
+      })
+    )
+    setInventoryQuery('')
   }
 
   const addItemRow = () => {
@@ -125,6 +155,7 @@ export default function SalesPage() {
         quantity: Number(item.quantity),
         bought_price: Number(item.bought_price),
         sold_price: Number(item.sold_price),
+        inventory_id: item.inventory_id || null,
       })),
     }
 
@@ -137,6 +168,32 @@ export default function SalesPage() {
     if (error) {
       setSaleError(error.message)
       return
+    }
+
+    if (!error) {
+      for (const item of saleItems) {
+        if (item.inventory_id && Number(item.quantity) > 0) {
+          const { data: currentInventory, error: lookupError } = await supabase
+            .from('inventory')
+            .select('qty')
+            .eq('id', item.inventory_id)
+            .single()
+
+          if (!lookupError && currentInventory) {
+            const nextQty = Math.max(0, Number(currentInventory.qty || 0) - Number(item.quantity))
+            const { error: stockError } = await supabase
+              .from('inventory')
+              .update({ qty: nextQty })
+              .eq('id', item.inventory_id)
+
+            if (stockError) {
+              console.error(stockError)
+            }
+          }
+        }
+      }
+
+      fetchInventory()
     }
 
     setSaleSuccess(editingSaleId ? 'Sale updated successfully.' : 'Sale logged successfully.')
@@ -153,6 +210,7 @@ export default function SalesPage() {
         quantity: Number(item.quantity || 1),
         bought_price: Number(item.bought_price || 0),
         sold_price: Number(item.sold_price || 0),
+        inventory_id: item.inventory_id || null,
       }))
     )
     setSaleError('')
@@ -363,10 +421,30 @@ export default function SalesPage() {
                       <label>Product Name</label>
                       <input
                         value={item.product_name}
-                        onChange={(e) => handleItemChange(index, 'product_name', e.target.value)}
-                        placeholder="Product name"
+                        onChange={(e) => {
+                          handleItemChange(index, 'product_name', e.target.value)
+                          setInventoryQuery(e.target.value)
+                        }}
+                        placeholder="Search inventory"
                         required
                       />
+                      {inventoryQuery || item.product_name ? (
+                        <div className="inventory-suggestions">
+                          {inventoryItems
+                            .filter((inventoryItem) => inventoryItem.name.toLowerCase().includes((item.product_name || inventoryQuery).toLowerCase()))
+                            .slice(0, 5)
+                            .map((inventoryItem) => (
+                              <button
+                                key={inventoryItem.id}
+                                type="button"
+                                className="inventory-suggestion"
+                                onClick={() => handleInventorySelect(index, inventoryItem)}
+                              >
+                                {inventoryItem.name} • Qty {inventoryItem.qty}
+                              </button>
+                            ))}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="field-group">
                       <label>Quantity</label>

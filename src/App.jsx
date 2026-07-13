@@ -11,6 +11,7 @@ import OrderConfirmation from './pages/OrderConfirmation'
 import ThankYou from './pages/ThankYou'
 import Login from './pages/Login'
 import SalesPage from './pages/SalesPage'
+import InventoryPage from './pages/InventoryPage'
 import './App.css'
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
             <Route path="/login" element={<Login />} />
             <Route path="/sales" element={<SalesPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
           </Routes>
         </main>
       </div>

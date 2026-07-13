@@ -76,13 +76,22 @@ export default function Header() {
           </Link>
 
           {isAdmin && (
-            <Link
-              to="/sales"
-              className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              Sales
-            </Link>
+            <>
+              <Link
+                to="/sales"
+                className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                Sales
+              </Link>
+              <Link
+                to="/inventory"
+                className={`nav-link ${location.pathname === '/inventory' ? 'active' : ''}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                Inventory
+              </Link>
+            </>
           )}
 
           <button

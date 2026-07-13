@@ -312,6 +312,31 @@
   margin-bottom: 0.5rem;
 }
 
+.inventory-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  padding: 0.4rem;
+  border: 1px solid #a8b8c8;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.inventory-suggestion {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.4rem 0.45rem;
+  color: #304160;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.inventory-suggestion:hover {
+  background: #e9eef4;
+}
+
 .sale-card__actions {
   display: flex;
   gap: 0.45rem;

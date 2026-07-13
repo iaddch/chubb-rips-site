@@ -46,6 +46,17 @@ CREATE TABLE IF NOT EXISTS sales (
   items JSONB NOT NULL DEFAULT '[]'::JSONB
 );
 
+-- Inventory table - tracks cards and sealed products used by the admin sales flow
+CREATE TABLE IF NOT EXISTS inventory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('Card', 'Sealed Product')),
+  qty INTEGER NOT NULL DEFAULT 0,
+  price_bought_at NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Cart items table - shopping cart items
 CREATE TABLE IF NOT EXISTS cart_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -96,6 +107,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
@@ -118,6 +130,10 @@ CREATE POLICY "Allow all access to events"
 DROP POLICY IF EXISTS "Allow all access to sales" ON sales;
 CREATE POLICY "Allow all access to sales"
   ON sales FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all access to inventory" ON inventory;
+CREATE POLICY "Allow all access to inventory"
+  ON inventory FOR ALL USING (true) WITH CHECK (true);
 
 -- Policies for cart (users can only access their own cart)
 DROP POLICY IF EXISTS "Users can manage their cart" ON cart_items;
