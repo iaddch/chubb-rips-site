@@ -47,6 +47,7 @@
 .social-link:hover {
   background: rgba(0, 0, 0, 0.16);
   color: #ffffff;
+  text-decoration: none;
   transform: translateY(-1px);
 }
 
@@ -91,6 +92,11 @@
   color: white;
 }
 
+.logo:hover {
+  color: white;
+  text-decoration: none;
+}
+
 .logo h1 {
   margin: 0;
   font-size: 1.8rem;
@@ -131,6 +137,7 @@
 .nav-link:hover {
   background: rgba(0, 0, 0, 0.16);
   color: #ffffff;
+  text-decoration: none;
   transform: translateY(-1px);
 }
 

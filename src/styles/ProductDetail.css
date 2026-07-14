@@ -153,6 +153,31 @@
   font-weight: 500;
 }
 
+.instagram-inquiry-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border-radius: 4px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.instagram-inquiry-link:hover {
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+}
+
+.instagram-inquiry-link svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* Add to Cart Section */
 .add-to-cart-section {
   display: flex;

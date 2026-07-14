@@ -123,8 +123,63 @@
   padding: 1rem;
 }
 
+.inventory-edit-button,
+.inventory-edit-cancel {
+  border: 1px solid #a8b8c8;
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-edit-button {
+  background: #a8b8c8;
+  color: #304160;
+}
+
+.inventory-edit-button:hover {
+  background: #91a5b8;
+}
+
+.inventory-edit-cancel {
+  background: #fff;
+  color: #304160;
+}
+
 .inventory-chart-wrap {
   height: 220px;
+}
+
+.inventory-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  color: #304160;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.inventory-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inventory-chart-legend__marker {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.inventory-chart-legend__marker--cards {
+  background: #a82028;
+}
+
+.inventory-chart-legend__marker--sealed {
+  background: #c85048;
 }
 
 .inventory-summary {

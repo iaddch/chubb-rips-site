@@ -14,7 +14,6 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([])
   const [averageRating, setAverageRating] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
     fetchProduct()
@@ -105,12 +104,27 @@ export default function ProductDetail() {
                   <dd>{product.condition}</dd>
                 </>
               )}
-              <dt>Stock:</dt>
+              <dt>Availability:</dt>
               <dd className={product.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'}>
-                {product.stock_quantity > 0 ? `${product.stock_quantity} available` : 'Out of Stock'}
+                {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
               </dd>
             </dl>
           </div>
+
+          <a
+            className="instagram-inquiry-link"
+            href="https://ig.me/m/chubbsvaultt"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Ask about ${product.name} on Instagram`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+            </svg>
+            Ask About Product
+          </a>
 
         </div>
       </div>

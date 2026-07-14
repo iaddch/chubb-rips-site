@@ -134,7 +134,7 @@ export default function Catalog() {
                         product.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'
                       }`}
                     >
-                      {product.stock_quantity > 0 ? `In Stock (${product.stock_quantity})` : 'Out of Stock'}
+                      {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
                     </p>
 
                     <div className="product-actions">

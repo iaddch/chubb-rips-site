@@ -15,6 +15,7 @@ export default function InventoryPage() {
   const [inventoryItems, setInventoryItems] = useState([])
   const [activeTab, setActiveTab] = useState('Cards')
   const [form, setForm] = useState(initialForm())
+  const [editingItemId, setEditingItemId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -45,23 +46,46 @@ export default function InventoryPage() {
     setError('')
     setSuccess('')
 
-    const { error: insertError } = await supabase.from('inventory').insert({
+    const itemValues = {
       name: form.name,
       type: form.type,
       qty: Number(form.qty),
       price_bought_at: Number(form.price_bought_at),
-    })
+    }
+
+    const { error: saveError } = editingItemId
+      ? await supabase.from('inventory').update(itemValues).eq('id', editingItemId)
+      : await supabase.from('inventory').insert(itemValues)
 
     setLoading(false)
 
-    if (insertError) {
-      setError(insertError.message)
+    if (saveError) {
+      setError(saveError.message)
       return
     }
 
-    setSuccess('Inventory item added successfully.')
+    setSuccess(editingItemId ? 'Inventory item updated successfully.' : 'Inventory item added successfully.')
     setForm(initialForm())
+    setEditingItemId(null)
     fetchInventory()
+  }
+
+  const handleEdit = (item) => {
+    setForm({
+      name: item.name || '',
+      type: item.type || 'Card',
+      qty: String(item.qty ?? ''),
+      price_bought_at: String(item.price_bought_at ?? ''),
+    })
+    setEditingItemId(item.id)
+    setError('')
+    setSuccess('')
+  }
+
+  const cancelEdit = () => {
+    setForm(initialForm())
+    setEditingItemId(null)
+    setError('')
   }
 
   const pieData = useMemo(() => {
@@ -89,7 +113,7 @@ export default function InventoryPage() {
       <div className="inventory-page__dashboard">
         <div className="inventory-page__panel">
           <div className="inventory-page__section-title">
-            <h3>Add Inventory Item</h3>
+            <h3>{editingItemId ? 'Edit Inventory Item' : 'Add Inventory Item'}</h3>
           </div>
           <form className="inventory-form" onSubmit={handleSubmit}>
             <div className="inventory-form__row">
@@ -144,8 +168,13 @@ export default function InventoryPage() {
             </div>
             <div className="sales-page__actions">
               <button className="button button--primary" type="submit" disabled={loading}>
-                {loading ? 'Adding...' : 'Add Inventory Item'}
+                {loading ? (editingItemId ? 'Updating...' : 'Adding...') : (editingItemId ? 'Update Item' : 'Add Item')}
               </button>
+              {editingItemId ? (
+                <button className="inventory-edit-cancel" type="button" onClick={cancelEdit}>
+                  Cancel
+                </button>
+              ) : null}
             </div>
           </form>
           {error ? <div className="message message--error">{error}</div> : null}
@@ -177,12 +206,13 @@ export default function InventoryPage() {
                   <th>Product Name</th>
                   <th>Current Qty</th>
                   <th>Price Bought At</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInventory.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="inventory-table__empty">No items in this category yet.</td>
+                    <td colSpan="4" className="inventory-table__empty">No items in this category yet.</td>
                   </tr>
                 ) : (
                   filteredInventory.map((item) => (
@@ -190,6 +220,11 @@ export default function InventoryPage() {
                       <td>{item.name}</td>
                       <td>{item.qty}</td>
                       <td>${Number(item.price_bought_at || 0).toFixed(2)}</td>
+                      <td>
+                        <button className="inventory-edit-button" type="button" onClick={() => handleEdit(item)}>
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -213,6 +248,10 @@ export default function InventoryPage() {
                 <Tooltip formatter={(value) => `${value} units`} />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+          <div className="inventory-chart-legend" aria-label="Inventory type legend">
+            <span><i className="inventory-chart-legend__marker inventory-chart-legend__marker--cards" />Cards</span>
+            <span><i className="inventory-chart-legend__marker inventory-chart-legend__marker--sealed" />Sealed Product</span>
           </div>
           <div className="inventory-summary">
             <div>
