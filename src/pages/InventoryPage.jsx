@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { supabase } from '../config/supabase'
 import '../styles/InventoryPage.css'
@@ -11,6 +11,18 @@ const initialForm = () => ({
   price_bought_at: '',
 })
 
+async function analyzeImage(base64Image) {
+  const { data, error } = await supabase.functions.invoke('analyze-inventory-image', {
+    body: { image: base64Image },
+  })
+
+  if (error) {
+    const responseBody = await error.context?.json().catch(() => null)
+    throw new Error(responseBody?.error || error.message)
+  }
+  return data
+}
+
 export default function InventoryPage() {
   const [inventoryItems, setInventoryItems] = useState([])
   const [activeTab, setActiveTab] = useState('Cards')
@@ -19,6 +31,41 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scanStatus, setScanStatus] = useState('')
+  const [scanError, setScanError] = useState('')
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+  const priceInputRef = useRef(null)
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = null
+    if (videoRef.current) videoRef.current.srcObject = null
+  }
+
+  const startCamera = async () => {
+    setScanError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+    } catch (cameraError) {
+      setScanError('Camera access was unavailable. Check your browser permissions and try again.')
+      console.error('Camera access error:', cameraError)
+    }
+  }
+
+  useEffect(() => {
+    if (isScannerOpen) startCamera()
+    return stopCamera
+  }, [isScannerOpen])
 
   const fetchInventory = async () => {
     const { data, error: inventoryError } = await supabase
@@ -88,6 +135,54 @@ export default function InventoryPage() {
     setError('')
   }
 
+  const openScanner = () => {
+    setScanStatus('')
+    setScanError('')
+    setIsScannerOpen(true)
+  }
+
+  const closeScanner = () => {
+    stopCamera()
+    setIsScannerOpen(false)
+  }
+
+  const handleCapture = async () => {
+    const video = videoRef.current
+    if (!video?.videoWidth || !video?.videoHeight) {
+      setScanError('The camera is still starting. Please try again in a moment.')
+      return
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+    const base64Image = canvas.toDataURL('image/jpeg', 0.9)
+
+    closeScanner()
+    setScanStatus('Recognizing item...')
+
+    try {
+      const result = await analyzeImage(base64Image)
+      const productName = result.name
+
+      if (!productName) throw new Error('No item name was found in the image.')
+
+      setForm((current) => ({
+        ...current,
+        name: productName,
+        type: result.type === 'Sealed Product' ? 'Sealed Product' : 'Card',
+        qty: '1',
+        price_bought_at: '',
+      }))
+      setScanStatus('Item recognized. Add the purchase price to continue.')
+      requestAnimationFrame(() => priceInputRef.current?.focus())
+    } catch (recognitionError) {
+      setScanStatus('')
+      setScanError(recognitionError.message || 'We could not recognize that item. Please enter it manually.')
+    }
+  }
+
   const pieData = useMemo(() => {
     const cardsQty = inventoryItems.filter((item) => item.type === 'Card').reduce((sum, item) => sum + Number(item.qty || 0), 0)
     const sealedQty = inventoryItems.filter((item) => item.type === 'Sealed Product').reduce((sum, item) => sum + Number(item.qty || 0), 0)
@@ -115,6 +210,9 @@ export default function InventoryPage() {
           <div className="inventory-page__section-title">
             <h3>{editingItemId ? 'Edit Inventory Item' : 'Add Inventory Item'}</h3>
           </div>
+          <button className="inventory-scan-button" type="button" onClick={openScanner}>
+            Scan Item with Camera
+          </button>
           <form className="inventory-form" onSubmit={handleSubmit}>
             <div className="inventory-form__row">
               <div className="field-group">
@@ -157,6 +255,7 @@ export default function InventoryPage() {
                 <label htmlFor="inventory-price">Price Bought At</label>
                 <input
                   id="inventory-price"
+                  ref={priceInputRef}
                   type="number"
                   step="0.01"
                   min="0"
@@ -179,6 +278,8 @@ export default function InventoryPage() {
           </form>
           {error ? <div className="message message--error">{error}</div> : null}
           {success ? <div className="message message--success">{success}</div> : null}
+          {scanStatus ? <div className="message message--success">{scanStatus}</div> : null}
+          {scanError ? <div className="message message--error">{scanError}</div> : null}
         </div>
 
         <div className="inventory-page__panel">
@@ -265,6 +366,29 @@ export default function InventoryPage() {
           </div>
         </div>
       </div>
+
+      {isScannerOpen ? (
+        <div className="inventory-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-title">
+          <div className="inventory-scanner-modal__backdrop" onClick={closeScanner} />
+          <div className="inventory-scanner-modal__content">
+            <div className="inventory-scanner-modal__header">
+              <h3 id="scanner-title">Scan Inventory Item</h3>
+              <button type="button" className="inventory-scanner-modal__close" onClick={closeScanner} aria-label="Close camera scanner">&times;</button>
+            </div>
+            <div className="inventory-camera-preview">
+              <video ref={videoRef} autoPlay playsInline muted />
+              <div className="inventory-camera-guide" aria-hidden="true" />
+            </div>
+            {scanError ? <p className="inventory-scanner-modal__error">{scanError}</p> : null}
+            <div className="inventory-scanner-modal__actions">
+              <button type="button" className="inventory-edit-cancel" onClick={closeScanner}>Cancel</button>
+              <button type="button" className="button button--primary" onClick={handleCapture} disabled={Boolean(scanError)}>
+                Capture
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }

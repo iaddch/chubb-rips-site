@@ -123,6 +123,23 @@
   padding: 1rem;
 }
 
+.inventory-scan-button {
+  width: 100%;
+  margin: 0.75rem 0 1rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid #304160;
+  border-radius: 6px;
+  background: #304160;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-scan-button:hover {
+  background: #243448;
+}
+
 .inventory-edit-button,
 .inventory-edit-cancel {
   border: 1px solid #a8b8c8;
@@ -204,6 +221,88 @@
 .inventory-summary span {
   color: #5b6b7a;
   font-size: 0.9rem;
+}
+
+.inventory-scanner-modal {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.inventory-scanner-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 32, 44, 0.75);
+}
+
+.inventory-scanner-modal__content {
+  position: relative;
+  width: min(100%, 620px);
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.inventory-scanner-modal__header,
+.inventory-scanner-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inventory-scanner-modal__header {
+  margin-bottom: 1rem;
+}
+
+.inventory-scanner-modal__header h3 {
+  margin: 0;
+}
+
+.inventory-scanner-modal__close {
+  border: 0;
+  background: transparent;
+  color: #304160;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.inventory-camera-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #1a202c;
+  aspect-ratio: 4 / 3;
+}
+
+.inventory-camera-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inventory-camera-guide {
+  position: absolute;
+  inset: 12% 10%;
+  border: 3px solid #c85048;
+  border-radius: 10px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+}
+
+.inventory-scanner-modal__error {
+  margin: 0.75rem 0;
+  color: #c53030;
+}
+
+.inventory-scanner-modal__actions {
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
