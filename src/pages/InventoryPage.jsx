@@ -34,14 +34,25 @@ export default function InventoryPage() {
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [scanStatus, setScanStatus] = useState('')
   const [scanError, setScanError] = useState('')
+  const [scanSuccess, setScanSuccess] = useState(false)
   const videoRef = useRef(null)
+  const scanCanvasRef = useRef(null)
   const streamRef = useRef(null)
+  const scanIntervalRef = useRef(null)
+  const scanInFlightRef = useRef(false)
+  const scannerActiveRef = useRef(false)
   const priceInputRef = useRef(null)
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
+  }
+
+  const stopScanLoop = () => {
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
+    scanIntervalRef.current = null
+    scanInFlightRef.current = false
   }
 
   const startCamera = async () => {
@@ -55,6 +66,7 @@ export default function InventoryPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
+        startScanLoop()
       }
     } catch (cameraError) {
       setScanError('Camera access was unavailable. Check your browser permissions and try again.')
@@ -63,8 +75,16 @@ export default function InventoryPage() {
   }
 
   useEffect(() => {
-    if (isScannerOpen) startCamera()
-    return stopCamera
+    if (isScannerOpen) {
+      scannerActiveRef.current = true
+      startCamera()
+    }
+
+    return () => {
+      scannerActiveRef.current = false
+      stopScanLoop()
+      stopCamera()
+    }
   }, [isScannerOpen])
 
   const fetchInventory = async () => {
@@ -138,49 +158,64 @@ export default function InventoryPage() {
   const openScanner = () => {
     setScanStatus('')
     setScanError('')
+    setScanSuccess(false)
     setIsScannerOpen(true)
   }
 
   const closeScanner = () => {
+    scannerActiveRef.current = false
+    stopScanLoop()
     stopCamera()
     setIsScannerOpen(false)
   }
 
-  const handleCapture = async () => {
-    const video = videoRef.current
-    if (!video?.videoWidth || !video?.videoHeight) {
-      setScanError('The camera is still starting. Please try again in a moment.')
-      return
-    }
+  const completeScan = (result) => {
+    if (!scannerActiveRef.current) return
 
-    const canvas = document.createElement('canvas')
+    setForm((current) => ({
+      ...current,
+      name: result.name,
+      type: result.type === 'Sealed Product' ? 'Sealed Product' : 'Card',
+      qty: '1',
+      price_bought_at: '',
+    }))
+    setScanStatus('Item recognized. Add the purchase price to continue.')
+    setScanError('')
+    setScanSuccess(true)
+    closeScanner()
+    window.setTimeout(() => setScanSuccess(false), 900)
+    requestAnimationFrame(() => priceInputRef.current?.focus())
+  }
+
+  const scanFrame = async () => {
+    if (!scannerActiveRef.current || scanInFlightRef.current) return
+
+    const video = videoRef.current
+    const canvas = scanCanvasRef.current
+    if (!video?.videoWidth || !video?.videoHeight || !canvas) return
+
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
     const base64Image = canvas.toDataURL('image/jpeg', 0.9)
 
-    closeScanner()
-    setScanStatus('Recognizing item...')
+    scanInFlightRef.current = true
 
     try {
       const result = await analyzeImage(base64Image)
-      const productName = result.name
-
-      if (!productName) throw new Error('No item name was found in the image.')
-
-      setForm((current) => ({
-        ...current,
-        name: productName,
-        type: result.type === 'Sealed Product' ? 'Sealed Product' : 'Card',
-        qty: '1',
-        price_bought_at: '',
-      }))
-      setScanStatus('Item recognized. Add the purchase price to continue.')
-      requestAnimationFrame(() => priceInputRef.current?.focus())
-    } catch (recognitionError) {
-      setScanStatus('')
-      setScanError(recognitionError.message || 'We could not recognize that item. Please enter it manually.')
+      if (result?.name && (result.type === 'Card' || result.type === 'Sealed Product')) completeScan(result)
+    } catch {
+      // A 400/no-match is expected while the user is aligning the item. Try the next frame.
+    } finally {
+      scanInFlightRef.current = false
     }
+  }
+
+  const startScanLoop = () => {
+    stopScanLoop()
+    setScanStatus('Align your card... Scanning...')
+    scanFrame()
+    scanIntervalRef.current = window.setInterval(scanFrame, 1800)
   }
 
   const pieData = useMemo(() => {
@@ -206,7 +241,7 @@ export default function InventoryPage() {
       </div>
 
       <div className="inventory-page__dashboard">
-        <div className="inventory-page__panel">
+        <div className={`inventory-page__panel ${scanSuccess ? 'inventory-page__panel--scan-success' : ''}`}>
           <div className="inventory-page__section-title">
             <h3>{editingItemId ? 'Edit Inventory Item' : 'Add Inventory Item'}</h3>
           </div>
@@ -378,13 +413,12 @@ export default function InventoryPage() {
             <div className="inventory-camera-preview">
               <video ref={videoRef} autoPlay playsInline muted />
               <div className="inventory-camera-guide" aria-hidden="true" />
+              <canvas ref={scanCanvasRef} className="inventory-camera-canvas" aria-hidden="true" />
             </div>
             {scanError ? <p className="inventory-scanner-modal__error">{scanError}</p> : null}
+            {!scanError ? <p className="inventory-scanner-modal__status">Align your card... Scanning...</p> : null}
             <div className="inventory-scanner-modal__actions">
               <button type="button" className="inventory-edit-cancel" onClick={closeScanner}>Cancel</button>
-              <button type="button" className="button button--primary" onClick={handleCapture} disabled={Boolean(scanError)}>
-                Capture
-              </button>
             </div>
           </div>
         </div>
