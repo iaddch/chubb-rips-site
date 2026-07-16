@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
 import { reviewsService } from '../services/supabaseService'
 import { useAuthStore } from '../store/index'
-import '../styles/ReviewForm.css'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { SelectNative } from '@/components/ui/select-native'
+import { Textarea } from '@/components/ui/textarea'
 
 export default function ReviewForm({ productId, onReviewAdded }) {
   const { user } = useAuthStore()
@@ -50,26 +53,22 @@ export default function ReviewForm({ productId, onReviewAdded }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="review-form">
-      <div className="form-group">
-        <label>Rating</label>
-        <select
-          name="rating"
-          value={formData.rating}
-          onChange={handleInputChange}
-          className="rating-select"
-        >
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="space-y-1.5">
+        <Label htmlFor="review-rating">Rating</Label>
+        <SelectNative id="review-rating" name="rating" value={formData.rating} onChange={handleInputChange}>
           <option value={1}>1 Star - Poor</option>
           <option value={2}>2 Stars - Fair</option>
           <option value={3}>3 Stars - Good</option>
           <option value={4}>4 Stars - Very Good</option>
           <option value={5}>5 Stars - Excellent</option>
-        </select>
+        </SelectNative>
       </div>
 
-      <div className="form-group">
-        <label>Comment</label>
-        <textarea
+      <div className="space-y-1.5">
+        <Label htmlFor="review-comment">Comment</Label>
+        <Textarea
+          id="review-comment"
           name="comment"
           value={formData.comment}
           onChange={handleInputChange}
@@ -79,9 +78,9 @@ export default function ReviewForm({ productId, onReviewAdded }) {
         />
       </div>
 
-      <button type="submit" className="btn-submit-review" disabled={loading}>
+      <Button type="submit" disabled={loading}>
         {loading ? 'Posting...' : 'Post Review'}
-      </button>
+      </Button>
     </form>
   )
 }

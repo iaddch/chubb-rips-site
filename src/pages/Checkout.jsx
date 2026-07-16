@@ -5,7 +5,10 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { useCartStore } from '../store/index'
 import { ordersService, orderItemsService } from '../services/supabaseService'
 import { supabase } from '../config/supabase'
-import '../styles/Checkout.css'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { SelectNative } from '@/components/ui/select-native'
 
 // Initialize Stripe (replace with your publishable key)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here')
@@ -129,42 +132,42 @@ function CheckoutForm() {
   const total = getTotal()
 
   return (
-    <div className="checkout-container">
-      <h1>Checkout</h1>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <h1 className="mb-8 text-center text-3xl font-semibold tracking-tight text-slate-900">Checkout</h1>
 
-      <div className="checkout-layout">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         {/* Order Summary */}
-        <div className="order-summary">
-          <h2>Order Summary</h2>
-          <div className="order-items">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Order Summary</h2>
+          <div className="divide-y divide-slate-200">
             {items.map(item => (
-              <div key={item.product_id} className="order-item">
-                <div className="item-info">
+              <div key={item.product_id} className="flex items-center justify-between gap-4 py-4 first:pt-0">
+                <div className="flex items-center gap-4">
                   {item.product?.image_url && (
-                    <img src={item.product.image_url} alt={item.product.name} />
+                    <img className="size-14 rounded-lg object-cover" src={item.product.image_url} alt={item.product.name} />
                   )}
                   <div>
-                    <p className="item-name">{item.product?.name}</p>
-                    <p className="item-set">{item.product?.set_name}</p>
-                    <p className="item-qty">Qty: {item.quantity}</p>
+                    <p className="font-semibold text-slate-900">{item.product?.name}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">{item.product?.set_name}</p>
+                    <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
                   </div>
                 </div>
-                <p className="item-price">${(item.product?.price * item.quantity).toFixed(2)}</p>
+                <p className="font-semibold text-slate-900">${(item.product?.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
           </div>
-          <div className="order-total">
-            <p>Total: ${total.toFixed(2)}</p>
+          <div className="mt-2 border-t-2 border-slate-200 pt-4 text-right">
+            <p className="text-lg font-bold text-slate-900">Total: ${total.toFixed(2)}</p>
           </div>
         </div>
 
         {/* Payment Form */}
-        <form className="payment-form" onSubmit={handleSubmit}>
-          <h2>Shipping Information</h2>
+        <form className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
+          <h2 className="border-b border-slate-200 pb-2 text-lg font-semibold text-slate-900">Shipping Information</h2>
 
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
               type="text"
               id="name"
               name="name"
@@ -174,9 +177,9 @@ function CheckoutForm() {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
               type="email"
               id="email"
               name="email"
@@ -186,9 +189,9 @@ function CheckoutForm() {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="address">Address</label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="address">Address</Label>
+            <Input
               type="text"
               id="address"
               name="address"
@@ -198,10 +201,10 @@ function CheckoutForm() {
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="city">City</label>
-              <input
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="city">City</Label>
+              <Input
                 type="text"
                 id="city"
                 name="city"
@@ -211,9 +214,9 @@ function CheckoutForm() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="state">State</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="state">State</Label>
+              <Input
                 type="text"
                 id="state"
                 name="state"
@@ -224,10 +227,10 @@ function CheckoutForm() {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="zipCode">ZIP Code</label>
-              <input
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="zipCode">ZIP Code</Label>
+              <Input
                 type="text"
                 id="zipCode"
                 name="zipCode"
@@ -237,9 +240,9 @@ function CheckoutForm() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="country">Country</label>
-              <select
+            <div className="space-y-1.5">
+              <Label htmlFor="country">Country</Label>
+              <SelectNative
                 id="country"
                 name="country"
                 value={shippingInfo.country}
@@ -248,15 +251,15 @@ function CheckoutForm() {
               >
                 <option value="US">United States</option>
                 <option value="CA">Canada</option>
-              </select>
+              </SelectNative>
             </div>
           </div>
 
-          <h2>Payment Information</h2>
+          <h2 className="border-b border-slate-200 pb-2 pt-2 text-lg font-semibold text-slate-900">Payment Information</h2>
 
-          <div className="form-group">
-            <label>Card Details</label>
-            <div className="card-element-container">
+          <div className="space-y-1.5">
+            <Label>Card Details</Label>
+            <div className="rounded-md border border-input px-3 py-2.5 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
               <CardElement
                 options={{
                   style: {
@@ -273,13 +276,14 @@ function CheckoutForm() {
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="btn-payment"
+            className="w-full"
+            size="lg"
             disabled={!stripe || loading}
           >
             {loading ? 'Processing...' : `Pay $${total.toFixed(2)}`}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

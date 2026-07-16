@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../config/supabase'
 import { useAuthStore } from '../store/index'
-import '../styles/Login.css'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -61,14 +63,14 @@ export default function Login() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>{isSignUp ? 'Create Account' : 'Sign In'}</h1>
+    <div className="grid min-h-[calc(100vh-4rem)] place-items-center bg-slate-50 p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <h1 className="mb-8 text-center text-2xl font-semibold tracking-tight text-slate-900">{isSignUp ? 'Create Account' : 'Sign In'}</h1>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
               type="email"
               id="email"
               name="email"
@@ -78,9 +80,9 @@ export default function Login() {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
               type="password"
               id="password"
               name="password"
@@ -92,9 +94,9 @@ export default function Login() {
           </div>
 
           {isSignUp && (
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
                 type="password"
                 id="confirmPassword"
                 name="confirmPassword"
@@ -106,32 +108,32 @@ export default function Login() {
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
-            className="btn-login"
+            className="mt-2 w-full"
             disabled={loading}
           >
             {loading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
-          </button>
+          </Button>
         </form>
 
-        <div className="auth-toggle">
-          <button
+        <div className="mt-6 border-t border-slate-200 pt-6 text-center">
+          <Button variant="ghost"
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
-            className="btn-toggle"
+            className="text-sm text-indigo-600 hover:text-indigo-700"
           >
             {isSignUp
               ? 'Already have an account? Sign In'
               : 'Need an account? Sign Up'
             }
-          </button>
+          </Button>
         </div>
 
-        <div className="back-link">
-          <button onClick={() => navigate('/')} className="btn-back">
+        <div className="mt-2 text-center">
+          <Button variant="ghost" onClick={() => navigate('/')} className="text-sm text-slate-500">
             ← Back to Store
-          </button>
+          </Button>
         </div>
       </div>
     </div>
