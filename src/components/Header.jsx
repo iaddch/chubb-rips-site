@@ -14,24 +14,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 export default function Header() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, setUser } = useAuthStore()
+  const { user, isAdmin, logout } = useAuthStore()
   const [menuOpen, setMenuOpen] = React.useState(false)
-  const [isAdmin, setIsAdmin] = React.useState(false)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    setUser(null)
+    logout()
     navigate('/')
-  }
-
-  const handleAdminLogin = () => {
-    const enteredPassword = window.prompt('Enter admin password')
-
-    if (enteredPassword === 'Venezuela12?') {
-      setIsAdmin(true)
-      setMenuOpen(false)
-      navigate('/sales')
-    }
   }
 
   const navLinks = [
@@ -106,11 +95,11 @@ export default function Header() {
             <Link className="hidden text-sm font-semibold text-white no-underline transition hover:text-gray-300 sm:inline-flex" to="/inventory">
               Dashboard
             </Link>
-          ) : (
-            <button type="button" className="hidden text-sm font-semibold text-white no-underline transition hover:text-gray-300 sm:inline-flex" onClick={handleAdminLogin}>
-              Admin Login
-            </button>
-          )}
+          ) : !user ? (
+            <Link className="hidden text-sm font-semibold text-white no-underline transition hover:text-gray-300 sm:inline-flex" to="/login">
+              Sign In
+            </Link>
+          ) : null}
           <Button
             asChild
             size="sm"

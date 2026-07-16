@@ -21,10 +21,12 @@ const persistCart = (items) => {
 export const useAuthStore = create((set) => ({
   user: null,
   loading: true,
+  isAdmin: false,
 
   setUser: (user) => set({ user }),
   setLoading: (loading) => set({ loading }),
-  logout: () => set({ user: null }),
+  setIsAdmin: (isAdmin) => set({ isAdmin }),
+  logout: () => set({ user: null, isAdmin: false }),
 }))
 
 export const useCartStore = create((set, get) => ({
