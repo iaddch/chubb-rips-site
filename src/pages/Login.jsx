@@ -11,6 +11,8 @@ export default function Login() {
   const { setUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -28,35 +30,37 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
+    setNotice('')
 
     try {
       if (isSignUp) {
         if (formData.password !== formData.confirmPassword) {
-          alert('Passwords do not match')
+          setError('Passwords do not match.')
           return
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
         })
 
-        if (error) throw error
+        if (signUpError) throw signUpError
 
-        alert('Check your email for the confirmation link!')
+        setNotice('Check your email for the confirmation link!')
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         })
 
-        if (error) throw error
+        if (signInError) throw signInError
 
         setUser(data.user)
         navigate('/')
       }
-    } catch (error) {
-      alert(error.message)
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -108,6 +112,9 @@ export default function Login() {
             </div>
           )}
 
+          {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</div> : null}
+          {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700" role="status">{notice}</div> : null}
+
           <Button
             type="submit"
             className="mt-2 w-full"
@@ -120,7 +127,7 @@ export default function Login() {
         <div className="mt-6 border-t border-slate-200 pt-6 text-center">
           <Button variant="ghost"
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => { setIsSignUp(!isSignUp); setError(''); setNotice('') }}
             className="text-sm text-indigo-600 hover:text-indigo-700"
           >
             {isSignUp

@@ -6,9 +6,12 @@ import { Label } from '@/components/ui/label'
 import { SelectNative } from '@/components/ui/select-native'
 import { Textarea } from '@/components/ui/textarea'
 
+const MAX_COMMENT_LENGTH = 1000
+
 export default function ReviewForm({ productId, onReviewAdded }) {
   const { user } = useAuthStore()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     rating: 5,
     comment: '',
@@ -16,9 +19,16 @@ export default function ReviewForm({ productId, onReviewAdded }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
 
     if (!user) {
-      alert('Please log in to leave a review')
+      setError('Please log in to leave a review.')
+      return
+    }
+
+    const comment = formData.comment.trim()
+    if (!comment) {
+      setError('Please share a few words before posting.')
       return
     }
 
@@ -29,16 +39,15 @@ export default function ReviewForm({ productId, onReviewAdded }) {
         user_id: user.id,
         user_name: user.email || 'Anonymous',
         rating: formData.rating,
-        comment: formData.comment,
+        comment,
         created_at: new Date().toISOString(),
       })
 
       setFormData({ rating: 5, comment: '' })
-      alert('Review posted successfully!')
       onReviewAdded()
     } catch (err) {
       console.error('Error posting review:', err)
-      alert('Error posting review')
+      setError('We couldn’t post your review. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -66,7 +75,10 @@ export default function ReviewForm({ productId, onReviewAdded }) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="review-comment">Comment</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="review-comment">Comment</Label>
+          <span className="text-xs text-slate-500">{formData.comment.length}/{MAX_COMMENT_LENGTH}</span>
+        </div>
         <Textarea
           id="review-comment"
           name="comment"
@@ -74,9 +86,12 @@ export default function ReviewForm({ productId, onReviewAdded }) {
           onChange={handleInputChange}
           placeholder="Share your thoughts about this product..."
           rows="4"
+          maxLength={MAX_COMMENT_LENGTH}
           required
         />
       </div>
+
+      {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</div> : null}
 
       <Button type="submit" disabled={loading}>
         {loading ? 'Posting...' : 'Post Review'}
