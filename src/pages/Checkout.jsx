@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectNative } from '@/components/ui/select-native'
+import ProductImage from '@/components/ProductImage'
 
 // Initialize Stripe (replace with your publishable key)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here')
@@ -20,6 +21,7 @@ function CheckoutForm() {
   const { items, getTotal, clearCart } = useCartStore()
 
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
   const [user, setUser] = useState(null)
   const [shippingInfo, setShippingInfo] = useState({
     name: '',
@@ -64,6 +66,7 @@ function CheckoutForm() {
     if (!stripe || !elements) return
 
     setLoading(true)
+    setSubmitError(null)
 
     try {
       // Create order in database
@@ -123,7 +126,7 @@ function CheckoutForm() {
 
     } catch (error) {
       console.error('Payment failed:', error)
-      alert('Payment failed: ' + error.message)
+      setSubmitError(error.message || 'Payment failed. Please check your details and try again.')
     } finally {
       setLoading(false)
     }
@@ -140,21 +143,22 @@ function CheckoutForm() {
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Order Summary</h2>
           <div className="divide-y divide-slate-200">
-            {items.map(item => (
-              <div key={item.product_id} className="flex items-center justify-between gap-4 py-4 first:pt-0">
-                <div className="flex items-center gap-4">
-                  {item.product?.image_url && (
-                    <img className="size-14 rounded-lg object-cover" src={item.product.image_url} alt={item.product.name} />
-                  )}
-                  <div>
-                    <p className="font-semibold text-slate-900">{item.product?.name}</p>
-                    <p className="mt-0.5 text-sm text-slate-500">{item.product?.set_name}</p>
-                    <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+            {items.map(item => {
+              const price = Number(item.product?.price ?? 0)
+              return (
+                <div key={item.product_id} className="flex items-center justify-between gap-4 py-4 first:pt-0">
+                  <div className="flex items-center gap-4">
+                    <ProductImage src={item.product?.image_url} alt={item.product?.name} className="size-14 shrink-0 rounded-lg" imgClassName="size-14 rounded-lg object-cover" fallbackClassName="text-[10px]" />
+                    <div>
+                      <p className="font-semibold text-slate-900">{item.product?.name || 'Unknown product'}</p>
+                      <p className="mt-0.5 text-sm text-slate-500">{item.product?.set_name}</p>
+                      <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                    </div>
                   </div>
+                  <p className="font-semibold text-slate-900">${(price * item.quantity).toFixed(2)}</p>
                 </div>
-                <p className="font-semibold text-slate-900">${(item.product?.price * item.quantity).toFixed(2)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
           <div className="mt-2 border-t-2 border-slate-200 pt-4 text-right">
             <p className="text-lg font-bold text-slate-900">Total: ${total.toFixed(2)}</p>
@@ -275,6 +279,10 @@ function CheckoutForm() {
               />
             </div>
           </div>
+
+          {submitError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{submitError}</div>
+          ) : null}
 
           <Button
             type="submit"

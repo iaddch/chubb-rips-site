@@ -65,7 +65,7 @@ export default function ThankYou() {
             <strong className="text-slate-900">Order Number:</strong> <span className="text-slate-600">{order.id.slice(-8).toUpperCase()}</span>
           </p>
           <p>
-            <strong className="text-slate-900">Total Paid:</strong> <span className="text-slate-600">${order.total_amount.toFixed(2)}</span>
+            <strong className="text-slate-900">Total Paid:</strong> <span className="text-slate-600">${Number(order.total_amount ?? 0).toFixed(2)}</span>
           </p>
           <p>
             <strong className="text-slate-900">Shipping To:</strong> <span className="text-slate-600">{order.shipping_address?.city}, {order.shipping_address?.state}</span>

@@ -7,26 +7,32 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectNative } from '@/components/ui/select-native'
 import { Switch } from '@/components/ui/switch'
+import ProductImage from '@/components/ProductImage'
 
 export default function Catalog() {
   const navigate = useNavigate()
   const { products, loading, filters, setProducts, setLoading, setFilters } = useProductStore()
   const [filteredProducts, setFilteredProducts] = useState([])
   const [sort, setSort] = useState('featured')
+  const [error, setError] = useState(null)
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setProducts(await productsService.getAll())
+    } catch (err) {
+      console.error('Error fetching products:', err)
+      setError('We couldn’t load the catalog. Check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true)
-        setProducts(await productsService.getAll())
-      } catch (err) {
-        console.error('Error fetching products:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchProducts()
-  }, [setLoading, setProducts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     let filtered = [...products]
@@ -47,6 +53,18 @@ export default function Catalog() {
   }), [filteredProducts, sort])
 
   if (loading) return <div className="grid min-h-[50vh] place-items-center text-sm text-muted-foreground">Loading the vault…</div>
+
+  if (error) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center px-4 text-center">
+        <div className="max-w-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Something went wrong</h2>
+          <p className="mt-2 text-sm text-slate-600">{error}</p>
+          <Button className="mt-5" onClick={fetchProducts}>Try again</Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-full bg-slate-50">
@@ -110,15 +128,20 @@ export default function Catalog() {
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {displayedProducts.map((product) => (
                 <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-                  <div className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 p-6">
-                    {product.image_url ? <img src={product.image_url} alt={product.name} className="size-full object-contain transition duration-300 group-hover:scale-105" /> : <span className="text-sm text-muted-foreground">Image unavailable</span>}
-                    <span className={`absolute left-4 top-4 rounded-full px-2.5 py-1 text-xs font-semibold ${product.stock_quantity > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>{product.stock_quantity > 0 ? 'In stock' : 'Sold out'}</span>
+                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 p-6">
+                    <ProductImage
+                      src={product.image_url}
+                      alt={product.name}
+                      className="size-full"
+                      imgClassName="size-full object-contain transition duration-300 group-hover:scale-105"
+                    />
+                    <span className={`absolute left-4 top-4 rounded-full px-2.5 py-1 text-xs font-semibold ${product.stock_quantity > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>{product.stock_quantity > 0 ? 'In stock' : 'Sold out'}</span>
                   </div>
                   <div className="p-5">
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{product.set_name || 'Pokémon TCG'}</p>
                     <h3 className="mt-2 line-clamp-2 min-h-12 text-base font-semibold leading-6 text-slate-900">{product.name}</h3>
                     <div className="mt-5 flex items-center justify-between gap-3">
-                      <span className="text-lg font-semibold text-slate-900">${product.price.toFixed(2)}</span>
+                      <span className="text-lg font-semibold text-slate-900">${Number(product.price ?? 0).toFixed(2)}</span>
                       <Button variant="outline" size="sm" onClick={() => navigate(`/product/${product.id}`)}>View item</Button>
                     </div>
                   </div>

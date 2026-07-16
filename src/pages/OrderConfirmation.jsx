@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ordersService } from '../services/supabaseService'
 import { Button } from '@/components/ui/button'
+import ProductImage from '@/components/ProductImage'
 
 export default function OrderConfirmation() {
   const location = useLocation()
@@ -77,7 +78,7 @@ export default function OrderConfirmation() {
                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
               </span>
             </p>
-            <p><strong className="text-slate-900">Total:</strong> ${order.total_amount.toFixed(2)}</p>
+            <p><strong className="text-slate-900">Total:</strong> ${Number(order.total_amount ?? 0).toFixed(2)}</p>
           </div>
         </div>
 
@@ -95,31 +96,29 @@ export default function OrderConfirmation() {
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Order Items</h3>
           <div className="divide-y divide-slate-100">
-            {order.order_items?.map(item => (
-              <div key={item.id} className="flex items-center justify-between gap-4 py-3 first:pt-0">
-                <div className="flex items-center gap-4">
-                  {item.products?.image_url && (
-                    <img className="size-14 rounded-lg object-cover" src={item.products.image_url} alt={item.products.name} />
-                  )}
-                  <div>
-                    <p className="font-semibold text-slate-900">{item.product_name}</p>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      Quantity: {item.quantity} × ${item.product_price.toFixed(2)}
-                    </p>
+            {order.order_items?.map(item => {
+              const itemPrice = Number(item.product_price ?? 0)
+              return (
+                <div key={item.id} className="flex items-center justify-between gap-4 py-3 first:pt-0">
+                  <div className="flex items-center gap-4">
+                    <ProductImage src={item.products?.image_url} alt={item.products?.name || item.product_name} className="size-14 shrink-0 rounded-lg" imgClassName="size-14 rounded-lg object-cover" fallbackClassName="text-[10px]" />
+                    <div>
+                      <p className="font-semibold text-slate-900">{item.product_name}</p>
+                      <p className="mt-0.5 text-sm text-slate-500">
+                        Quantity: {item.quantity} × ${itemPrice.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
+                  <p className="font-semibold text-slate-900">${(itemPrice * item.quantity).toFixed(2)}</p>
                 </div>
-                <p className="font-semibold text-slate-900">${(item.product_price * item.quantity).toFixed(2)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 border-t border-slate-200 pt-6">
           <Button onClick={() => navigate('/')}>
             Continue Shopping
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/orders')}>
-            View All Orders
           </Button>
         </div>
       </div>

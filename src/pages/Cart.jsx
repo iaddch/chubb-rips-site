@@ -4,6 +4,7 @@ import { useCartStore } from '../store/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import ProductImage from '@/components/ProductImage'
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -49,31 +50,36 @@ export default function Cart() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.product_id}>
-                    <TableCell className="px-6 py-4">
-                      <div className="flex min-w-56 items-center gap-4">
-                        <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-100">
-                          {item.product?.image_url ? <img className="size-full object-contain p-1" src={item.product.image_url} alt={item.product.name} /> : null}
+                {items.map((item) => {
+                  const price = Number(item.product?.price ?? 0)
+                  const stockLimit = item.product?.stock_quantity > 0 ? item.product.stock_quantity : 1
+                  const clampQuantity = (value) => Math.min(stockLimit, Math.max(1, value))
+                  return (
+                    <TableRow key={item.product_id}>
+                      <TableCell className="px-6 py-4">
+                        <div className="flex min-w-56 items-center gap-4">
+                          <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-100">
+                            <ProductImage src={item.product?.image_url} alt={item.product?.name} className="size-full" imgClassName="size-full object-contain p-1" fallbackClassName="text-[10px]" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-900">{item.product?.name || 'Unknown product'}</p>
+                            <p className="mt-1 text-xs text-slate-500">{item.product?.set_name}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">{item.product?.name}</p>
-                          <p className="mt-1 text-xs text-slate-500">{item.product?.set_name}</p>
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-700">${price.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Button variant="outline" size="icon" aria-label="Decrease quantity" onClick={() => updateItemQuantity(item.product_id, clampQuantity(item.quantity - 1))}>−</Button>
+                          <Input className="w-14 text-center" type="number" min="1" max={stockLimit} value={item.quantity} onChange={(e) => updateItemQuantity(item.product_id, clampQuantity(parseInt(e.target.value, 10) || 1))} />
+                          <Button variant="outline" size="icon" aria-label="Increase quantity" onClick={() => updateItemQuantity(item.product_id, clampQuantity(item.quantity + 1))}>+</Button>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium text-slate-700">${item.product?.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Button variant="outline" size="icon" aria-label="Decrease quantity" onClick={() => updateItemQuantity(item.product_id, Math.max(1, item.quantity - 1))}>−</Button>
-                        <Input className="w-14 text-center" type="number" min="1" max={item.product?.stock_quantity || 1} value={item.quantity} onChange={(e) => updateItemQuantity(item.product_id, parseInt(e.target.value) || 1)} />
-                        <Button variant="outline" size="icon" aria-label="Increase quantity" onClick={() => updateItemQuantity(item.product_id, Math.min(item.product?.stock_quantity || 1, item.quantity + 1))}>+</Button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold text-slate-900">${(item.product?.price * item.quantity).toFixed(2)}</TableCell>
-                    <TableCell className="px-6 text-right"><Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => removeItem(item.product_id)}>Remove</Button></TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="font-semibold text-slate-900">${(price * item.quantity).toFixed(2)}</TableCell>
+                      <TableCell className="px-6 text-right"><Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => removeItem(item.product_id)}>Remove</Button></TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
