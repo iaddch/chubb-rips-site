@@ -12,6 +12,7 @@ export default function ProductDetail() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const addItem = useCartStore((state) => state.addItem)
+  const inCartQty = useCartStore((state) => state.items.find((item) => String(item.product_id) === String(id))?.quantity || 0)
   const [product, setProduct] = useState(null)
   const [reviews, setReviews] = useState([])
   const [averageRating, setAverageRating] = useState(0)
@@ -68,6 +69,7 @@ export default function ProductDetail() {
 
   const inStock = product.stock_quantity > 0
   const price = Number(product.price ?? 0)
+  const remaining = Math.max(0, product.stock_quantity - inCartQty)
 
   return (
     <main className="min-h-full bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -98,21 +100,21 @@ export default function ProductDetail() {
               {product.condition ? <div className="rounded-xl bg-slate-50 p-3"><dt className="text-xs text-slate-500">Condition</dt><dd className="mt-1 font-medium text-slate-900">{product.condition}</dd></div> : null}
             </dl>
 
-            {inStock ? (
+            {inStock && remaining > 0 ? (
               <div className="mt-8 flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
                     <Button variant="outline" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</Button>
                     <span className="w-10 text-center text-sm font-medium text-slate-900" aria-live="polite">{quantity}</span>
-                    <Button variant="outline" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((q) => Math.min(product.stock_quantity, q + 1))}>+</Button>
+                    <Button variant="outline" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((q) => Math.min(remaining, q + 1))}>+</Button>
                   </div>
-                  <span className="text-sm text-slate-500">{product.stock_quantity} in stock</span>
+                  <span className="text-sm text-slate-500">{remaining} in stock{inCartQty > 0 ? ` (${inCartQty} already in cart)` : ''}</span>
                 </div>
                 <Button
                   className="w-full"
                   size="lg"
                   onClick={() => {
-                    addItem(product, quantity)
+                    addItem(product, Math.min(remaining, quantity))
                     setJustAdded(true)
                     setQuantity(1)
                     setTimeout(() => setJustAdded(false), 2000)
@@ -120,6 +122,11 @@ export default function ProductDetail() {
                 >
                   {justAdded ? 'Added to cart ✓' : 'Add to cart'}
                 </Button>
+              </div>
+            ) : inStock ? (
+              <div className="mt-8 flex flex-col gap-2">
+                <Button className="w-full" size="lg" disabled>All {product.stock_quantity} in your cart</Button>
+                <Link className="text-center text-sm font-medium text-indigo-700 underline underline-offset-4" to="/cart">View cart</Link>
               </div>
             ) : (
               <Button className="mt-8 w-full" size="lg" disabled>Currently sold out</Button>
@@ -132,6 +139,7 @@ export default function ProductDetail() {
             >
               Have a question? Ask on Instagram
             </a>
+            <div className="sr-only" role="status" aria-live="polite">{justAdded ? `Added ${product.name} to cart.` : ''}</div>
           </div>
         </section>
 

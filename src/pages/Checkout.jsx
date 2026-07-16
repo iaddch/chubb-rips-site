@@ -199,6 +199,7 @@ function CheckoutForm() {
               type="text"
               id="name"
               name="name"
+              maxLength={100}
               value={shippingInfo.name}
               onChange={handleInputChange}
               required
@@ -211,6 +212,7 @@ function CheckoutForm() {
               type="email"
               id="email"
               name="email"
+              maxLength={254}
               value={shippingInfo.email}
               onChange={handleInputChange}
               required
@@ -223,6 +225,7 @@ function CheckoutForm() {
               type="text"
               id="address"
               name="address"
+              maxLength={200}
               value={shippingInfo.address}
               onChange={handleInputChange}
               required
@@ -236,6 +239,7 @@ function CheckoutForm() {
                 type="text"
                 id="city"
                 name="city"
+                maxLength={100}
                 value={shippingInfo.city}
                 onChange={handleInputChange}
                 required
@@ -248,6 +252,7 @@ function CheckoutForm() {
                 type="text"
                 id="state"
                 name="state"
+                maxLength={50}
                 value={shippingInfo.state}
                 onChange={handleInputChange}
                 required
@@ -262,6 +267,7 @@ function CheckoutForm() {
                 type="text"
                 id="zipCode"
                 name="zipCode"
+                maxLength={20}
                 value={shippingInfo.zipCode}
                 onChange={handleInputChange}
                 required

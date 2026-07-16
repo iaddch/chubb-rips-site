@@ -13,11 +13,17 @@ export default function Catalog() {
   const navigate = useNavigate()
   const { products, loading, filters, setProducts, setLoading, setFilters } = useProductStore()
   const addItem = useCartStore((state) => state.addItem)
+  const cartItems = useCartStore((state) => state.items)
+  const cartQuantityById = useMemo(
+    () => Object.fromEntries(cartItems.map((item) => [item.product_id, item.quantity])),
+    [cartItems]
+  )
   const [filteredProducts, setFilteredProducts] = useState([])
   const [sort, setSort] = useState('featured')
   const [error, setError] = useState(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [addedId, setAddedId] = useState(null)
+  const [announcement, setAnnouncement] = useState('')
 
   const fetchProducts = async () => {
     try {
@@ -139,14 +145,18 @@ export default function Catalog() {
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {displayedProducts.map((product) => (
-                <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+              {displayedProducts.map((product) => {
+                const inCartQty = cartQuantityById[product.id] || 0
+                const soldOut = product.stock_quantity <= 0
+                const atMax = !soldOut && inCartQty >= product.stock_quantity
+                return (
+                <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md motion-reduce:transition-none">
                   <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 p-6">
                     <ProductImage
                       src={product.image_url}
                       alt={product.name}
                       className="size-full"
-                      imgClassName="size-full object-contain transition duration-300 group-hover:scale-105"
+                      imgClassName="size-full object-contain transition duration-300 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     />
                     <span className={`absolute left-4 top-4 rounded-full px-2.5 py-1 text-xs font-semibold ${product.stock_quantity > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>{product.stock_quantity > 0 ? 'In stock' : 'Sold out'}</span>
                   </div>
@@ -160,21 +170,24 @@ export default function Catalog() {
                     <Button
                       className="mt-3 w-full"
                       size="sm"
-                      disabled={product.stock_quantity <= 0}
+                      disabled={soldOut || atMax}
                       onClick={() => {
                         addItem(product, 1)
                         setAddedId(product.id)
+                        setAnnouncement(`Added ${product.name} to cart.`)
                         setTimeout(() => setAddedId((current) => (current === product.id ? null : current)), 2000)
                       }}
                     >
-                      {product.stock_quantity <= 0 ? 'Sold out' : addedId === product.id ? 'Added ✓' : 'Add to cart'}
+                      {soldOut ? 'Sold out' : atMax ? 'All in cart' : addedId === product.id ? 'Added ✓' : 'Add to cart'}
                     </Button>
                   </div>
                 </article>
-              ))}
+                )
+              })}
             </div>
           )}
         </main>
+        <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
       </div>
     </div>
   )

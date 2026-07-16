@@ -42,6 +42,7 @@ export default function SalesPage() {
   const [saleLoading, setSaleLoading] = useState(false)
   const [saleError, setSaleError] = useState('')
   const [saleSuccess, setSaleSuccess] = useState('')
+  const [saleWarning, setSaleWarning] = useState(false)
   const [sales, setSales] = useState([])
   const [editingSaleId, setEditingSaleId] = useState(null)
   const [inventoryItems, setInventoryItems] = useState([])
@@ -175,6 +176,7 @@ export default function SalesPage() {
     setSaleLoading(true)
     setSaleError('')
     setSaleSuccess('')
+    setSaleWarning(false)
 
     const payload = {
       event_id: selectedEvent.id,
@@ -199,33 +201,43 @@ export default function SalesPage() {
       return
     }
 
-    if (!error) {
-      for (const item of saleItems) {
-        if (item.inventory_id && Number(item.quantity) > 0) {
-          const { data: currentInventory, error: lookupError } = await supabase
-            .from('inventory')
-            .select('qty')
-            .eq('id', item.inventory_id)
-            .single()
+    const stockSyncFailures = []
 
-          if (!lookupError && currentInventory) {
-            const nextQty = Math.max(0, Number(currentInventory.qty || 0) - Number(item.quantity))
-            const { error: stockError } = await supabase
-              .from('inventory')
-              .update({ qty: nextQty })
-              .eq('id', item.inventory_id)
+    for (const item of saleItems) {
+      if (item.inventory_id && Number(item.quantity) > 0) {
+        const { data: currentInventory, error: lookupError } = await supabase
+          .from('inventory')
+          .select('qty')
+          .eq('id', item.inventory_id)
+          .single()
 
-            if (stockError) {
-              console.error(stockError)
-            }
-          }
+        if (lookupError || !currentInventory) {
+          console.error(lookupError)
+          stockSyncFailures.push(item.product_name)
+          continue
+        }
+
+        const nextQty = Math.max(0, Number(currentInventory.qty || 0) - Number(item.quantity))
+        const { error: stockError } = await supabase
+          .from('inventory')
+          .update({ qty: nextQty })
+          .eq('id', item.inventory_id)
+
+        if (stockError) {
+          console.error(stockError)
+          stockSyncFailures.push(item.product_name)
         }
       }
-
-      fetchInventory()
     }
 
-    setSaleSuccess(editingSaleId ? 'Sale updated successfully.' : 'Sale logged successfully.')
+    fetchInventory()
+
+    setSaleWarning(stockSyncFailures.length > 0)
+    setSaleSuccess(
+      stockSyncFailures.length
+        ? `${editingSaleId ? 'Sale updated' : 'Sale logged'}, but stock for ${stockSyncFailures.join(', ')} couldn’t be updated automatically — adjust it manually in Inventory.`
+        : editingSaleId ? 'Sale updated successfully.' : 'Sale logged successfully.'
+    )
     setSaleItems([initialItem()])
     setEditingSaleId(null)
     fetchSalesForEvent(selectedEvent.id)
@@ -244,6 +256,7 @@ export default function SalesPage() {
     )
     setSaleError('')
     setSaleSuccess('')
+    setSaleWarning(false)
   }
 
   const handleCancelEdit = () => {
@@ -251,6 +264,7 @@ export default function SalesPage() {
     setSaleItems([initialItem()])
     setSaleError('')
     setSaleSuccess('')
+    setSaleWarning(false)
   }
 
   const handleDeleteSale = async (saleId) => {
@@ -263,6 +277,7 @@ export default function SalesPage() {
     }
 
     setSales((current) => current.filter((sale) => sale.id !== saleId))
+    setSaleWarning(false)
     setSaleSuccess('Sale deleted successfully.')
   }
 
@@ -346,12 +361,12 @@ export default function SalesPage() {
                 className="flex min-h-[220px] min-w-[220px] flex-1 flex-col justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-900 hover:shadow-md"
               >
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <strong className="font-extrabold text-slate-900">{event.name}</strong>
-                    <span className="text-xs text-slate-500">{event.date}</span>
+                  <div className="flex items-start justify-between gap-2">
+                    <strong className="line-clamp-2 font-extrabold text-slate-900">{event.name}</strong>
+                    <span className="shrink-0 text-xs text-slate-500">{event.date}</span>
                   </div>
                   <div className="text-sm text-slate-600">
-                    <span>{event.address}</span>
+                    <span className="line-clamp-2 break-words">{event.address}</span>
                   </div>
                 </div>
 
@@ -550,7 +565,14 @@ export default function SalesPage() {
             </div>
           </form>
           {saleError ? <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{saleError}</div> : null}
-          {saleSuccess ? <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700" role="status">{saleSuccess}</div> : null}
+          {saleSuccess ? (
+            <div
+              className={`mt-4 rounded-lg border px-3 py-2 text-sm ${saleWarning ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}
+              role="status"
+            >
+              {saleSuccess}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">

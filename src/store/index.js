@@ -39,28 +39,38 @@ export const useCartStore = create((set, get) => ({
   },
   setLoading: (loading) => set({ loading }),
 
+  // Clamps to the product's current stock so repeated adds (quick-add
+  // spam-clicks, or adding the same item from both the catalog and the
+  // product page) can never push the cart past what's actually available.
+  // Returns the quantity that actually landed in the cart, so callers can
+  // tell the user when their request got capped.
   addItem: (product, quantity) => {
     const items = get().items
     const existing = items.find((item) => item.product_id === product.id)
+    const stock = Number.isFinite(product.stock_quantity) ? product.stock_quantity : Infinity
 
     if (existing) {
+      const nextQuantity = Math.min(stock, existing.quantity + quantity)
       set({
         items: items.map((item) =>
           item.product_id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: nextQuantity, product }
             : item
         ),
       })
       persistCart(get().items)
-    } else {
-      set({
-        items: [
-          ...items,
-          { product_id: product.id, quantity, product },
-        ],
-      })
-      persistCart(get().items)
+      return nextQuantity
     }
+
+    const nextQuantity = Math.min(stock, quantity)
+    set({
+      items: [
+        ...items,
+        { product_id: product.id, quantity: nextQuantity, product },
+      ],
+    })
+    persistCart(get().items)
+    return nextQuantity
   },
 
   updateItemQuantity: (productId, quantity) => {
