@@ -18,7 +18,7 @@
   // go here; set those with `wrangler secret put <NAME>` instead, and see
   // .dev.vars.example for local development.
   "vars": {
-    "SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
-    "SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY"
+    "SUPABASE_URL": "https://gfmdzrwhwkvuxisgxlsf.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_JTKxrYcJYMnVfAqLe9BN1Q_xb2yAe5Q"
   }
 }
