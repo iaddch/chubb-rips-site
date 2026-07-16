@@ -63,10 +63,13 @@ export const productsService = {
 
   // Search products
   search: async (query) => {
+    // Escape PostgREST filter syntax characters so user input can't inject
+    // additional filter clauses (commas, parens) or break the ilike pattern.
+    const escaped = String(query).replace(/[%,()]/g, '\\$&')
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`name.ilike.%${escaped}%,description.ilike.%${escaped}%`)
     if (error) throw error
     return data
   },
@@ -129,9 +132,20 @@ export const reviewsService = {
 }
 
 // ============ CART ============
+// user_id is never accepted from the caller here - it's read from the
+// current Supabase session so a caller can't pass someone else's user id.
+// RLS on cart_items enforces the same thing server-side (auth.uid() =
+// user_id), but deriving it here means there's no forgeable field at all.
+const requireUserId = async () => {
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data?.user) throw new Error('Not authenticated')
+  return data.user.id
+}
+
 export const cartService = {
-  // Get user's cart
-  getCart: async (userId) => {
+  // Get current user's cart
+  getCart: async () => {
+    const userId = await requireUserId()
     const { data, error } = await supabase
       .from('cart_items')
       .select('*, products(*)')
@@ -140,8 +154,10 @@ export const cartService = {
     return data
   },
 
-  // Add item to cart
-  addItem: async (userId, productId, quantity) => {
+  // Add item to current user's cart
+  addItem: async (productId, quantity) => {
+    const userId = await requireUserId()
+
     // Check if item already in cart
     const { data: existing } = await supabase
       .from('cart_items')
@@ -186,8 +202,9 @@ export const cartService = {
     if (error) throw error
   },
 
-  // Clear entire cart
-  clearCart: async (userId) => {
+  // Clear current user's entire cart
+  clearCart: async () => {
+    const userId = await requireUserId()
     const { error } = await supabase
       .from('cart_items')
       .delete()
