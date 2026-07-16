@@ -1,14 +1,24 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "chubb-rips-site",
+  "main": "worker/index.js",
   "compatibility_date": "2026-07-09",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS"
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  // Public values only - same ones used by the frontend (VITE_SUPABASE_*).
+  // Real secrets (Stripe keys, the Supabase service role key) must never
+  // go here; set those with `wrangler secret put <NAME>` instead, and see
+  // .dev.vars.example for local development.
+  "vars": {
+    "SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
+    "SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY"
+  }
 }

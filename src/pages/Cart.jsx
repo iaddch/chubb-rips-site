@@ -4,6 +4,17 @@ import { useCartStore } from '../store/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import ProductImage from '@/components/ProductImage'
 
 export default function Cart() {
@@ -30,8 +41,7 @@ export default function Cart() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold tracking-[0.2em] text-indigo-600">CHUBB&apos;S VAULT</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Your cart</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Your cart</h1>
             <p className="mt-2 text-sm text-slate-500">{items.length} item{items.length === 1 ? '' : 's'} selected</p>
           </div>
           <Button variant="ghost" className="text-slate-500" onClick={() => navigate('/')}>← Continue shopping</Button>
@@ -88,12 +98,26 @@ export default function Cart() {
             <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
             <div className="mt-5 space-y-3 border-b border-slate-100 pb-5 text-sm">
               <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-medium text-slate-900">${total.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-500"><span>Shipping</span><span>Calculated at checkout</span></div>
+              <div className="flex justify-between text-slate-500"><span>Shipping</span><span className="font-medium text-emerald-700">Free</span></div>
             </div>
             <div className="flex items-baseline justify-between py-5"><span className="font-semibold text-slate-900">Estimated total</span><span className="text-2xl font-semibold tracking-tight text-slate-900">${total.toFixed(2)}</span></div>
             <Button className="w-full" onClick={() => navigate('/checkout')}>Proceed to checkout</Button>
             <Button variant="outline" className="mt-3 w-full" onClick={() => navigate('/')}>Keep shopping</Button>
-            <Button variant="ghost" className="mt-3 w-full text-slate-500 hover:text-red-600" onClick={() => { if (window.confirm('Clear all items from cart?')) clearCart() }}>Clear cart</Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" className="mt-3 w-full text-slate-500 hover:text-red-600">Clear cart</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all items from cart?</AlertDialogTitle>
+                  <AlertDialogDescription>This removes every item currently in your cart. You&apos;ll need to add them again to check out.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={clearCart}>Clear cart</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </aside>
         </div>
       </div>

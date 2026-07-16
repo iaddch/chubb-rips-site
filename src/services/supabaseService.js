@@ -259,20 +259,11 @@ export const ordersService = {
     return data
   },
 
-  // Update order status
-  updateStatus: async (orderId, status, paymentIntentId = null) => {
-    const updates = { status }
-    if (paymentIntentId) {
-      updates.stripe_payment_intent_id = paymentIntentId
-    }
-    const { data, error } = await supabase
-      .from('orders')
-      .update(updates)
-      .eq('id', orderId)
-      .select()
-    if (error) throw error
-    return data[0]
-  },
+  // There is no client-side updateStatus here on purpose: orders has no
+  // client-facing UPDATE policy, so only the Stripe webhook (worker/index.js,
+  // using the service role key after verifying payment) can mark an order
+  // paid. Letting the browser flip its own order to "paid" is exactly the
+  // kind of client-trusted authorization field this app used to have.
 }
 
 // ============ ORDER ITEMS ============

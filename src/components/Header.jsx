@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../store/index'
+import { useAuthStore, useCartStore } from '../store/index'
 import { supabase } from '../config/supabase'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,7 @@ export default function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isAdmin, logout } = useAuthStore()
+  const cartCount = useCartStore((state) => state.getItemCount())
   const [menuOpen, setMenuOpen] = React.useState(false)
 
   const handleLogout = async () => {
@@ -26,6 +27,10 @@ export default function Header() {
   const navLinks = [
     { label: 'Shop', to: '/' },
     ...(isAdmin ? [{ label: 'Sales', to: '/sales' }, { label: 'Inventory', to: '/inventory' }] : []),
+  ]
+
+  const authLinks = [
+    ...(isAdmin ? [{ label: 'Dashboard', to: '/inventory' }] : !user ? [{ label: 'Sign In', to: '/login' }] : []),
   ]
 
   return (
@@ -42,7 +47,7 @@ export default function Header() {
               </svg>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-44 p-1.5 md:hidden">
+            <PopoverContent align="start" className="w-48 p-1.5 md:hidden">
                 <NavigationMenu className="max-w-none *:w-full" viewport={false}>
                   <NavigationMenuList className="flex-col items-stretch gap-1">
                   {navLinks.map((link) => (
@@ -58,6 +63,33 @@ export default function Header() {
                   ))}
                   </NavigationMenuList>
                 </NavigationMenu>
+                {authLinks.length || user ? (
+                  <NavigationMenu className="mt-1.5 max-w-none border-t border-slate-100 pt-1.5 *:w-full" viewport={false}>
+                    <NavigationMenuList className="flex-col items-stretch gap-1">
+                      {authLinks.map((link) => (
+                        <NavigationMenuItem className="w-full" key={link.to}>
+                          <NavigationMenuLink
+                            asChild
+                            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-950"
+                          >
+                            <Link to={link.to} onClick={() => setMenuOpen(false)}>{link.label}</Link>
+                          </NavigationMenuLink>
+                        </NavigationMenuItem>
+                      ))}
+                      {user ? (
+                        <NavigationMenuItem className="w-full">
+                          <button
+                            type="button"
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+                            onClick={() => { setMenuOpen(false); handleLogout() }}
+                          >
+                            Sign out
+                          </button>
+                        </NavigationMenuItem>
+                      ) : null}
+                    </NavigationMenuList>
+                  </NavigationMenu>
+                ) : null}
             </PopoverContent>
           </Popover>
 
@@ -100,6 +132,12 @@ export default function Header() {
               Sign In
             </Link>
           ) : null}
+          <Link className="relative flex items-center text-gray-400 no-underline transition hover:text-white" to="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}>
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293A1 1 0 005 17h12M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" /></svg>
+            {cartCount > 0 ? (
+              <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">{cartCount > 9 ? '9+' : cartCount}</span>
+            ) : null}
+          </Link>
           <Button
             asChild
             size="sm"

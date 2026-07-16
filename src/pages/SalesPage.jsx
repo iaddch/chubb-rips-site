@@ -4,6 +4,17 @@ import { supabase } from '../config/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const initialItem = () => ({
   product_name: '',
@@ -106,7 +117,8 @@ export default function SalesPage() {
     setEventLoading(false)
 
     if (error) {
-      setEventError(error.message)
+      console.error(error)
+      setEventError('Couldn’t create the event. Check the details and try again.')
       return
     }
 
@@ -182,7 +194,8 @@ export default function SalesPage() {
     setSaleLoading(false)
 
     if (error) {
-      setSaleError(error.message)
+      console.error(error)
+      setSaleError('Couldn’t save this sale. Check the details and try again.')
       return
     }
 
@@ -244,7 +257,8 @@ export default function SalesPage() {
     const { error } = await supabase.from('sales').delete().eq('id', saleId)
 
     if (error) {
-      setSaleError(error.message)
+      console.error(error)
+      setSaleError('Couldn’t delete this sale. Try again.')
       return
     }
 
@@ -305,8 +319,7 @@ export default function SalesPage() {
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-bold tracking-[0.16em] text-indigo-600">DASHBOARD</p>
-            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">Event &amp; Sales Dashboard</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Event &amp; Sales Dashboard</h2>
             <p className="mt-1 text-sm text-slate-500">Manage events and log sales for each pop-up or market day.</p>
           </div>
         </div>
@@ -345,7 +358,7 @@ export default function SalesPage() {
                 <div className="mt-auto flex flex-col gap-2">
                   <div className="flex h-16 items-end justify-center gap-2 pt-1">
                     <div
-                      className="min-h-[18px] flex-1 rounded-t-full bg-gradient-to-t from-indigo-700 to-indigo-500"
+                      className="min-h-[18px] flex-1 rounded-t-full bg-gradient-to-t from-amber-700 to-amber-500"
                       style={{ height: `${Math.max(18, Math.min(100, event.revenue ? event.revenue / 4 : 0))}%` }}
                     />
                     <div
@@ -354,8 +367,8 @@ export default function SalesPage() {
                     />
                   </div>
                   <div className="flex justify-between gap-2 border-t border-slate-100 pt-2 text-xs font-medium">
-                    <span className="text-indigo-600">Rev ${event.revenue.toFixed(2)}</span>
-                    <span className="text-emerald-600">Prof ${event.profit.toFixed(2)}</span>
+                    <span className="text-amber-700">Rev ${event.revenue.toFixed(2)}</span>
+                    <span className="text-emerald-700">Prof ${event.profit.toFixed(2)}</span>
                   </div>
                 </div>
               </button>
@@ -428,8 +441,7 @@ export default function SalesPage() {
     <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-bold tracking-[0.16em] text-indigo-600">EVENT DETAIL</p>
-          <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{selectedEvent.name}</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{selectedEvent.name}</h2>
           <p className="mt-1 text-sm text-slate-500">{selectedEvent.address} • {selectedEvent.date}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -568,9 +580,21 @@ export default function SalesPage() {
                         <Button variant="secondary" size="sm" type="button" onClick={() => handleEditSale(sale)}>
                           Edit
                         </Button>
-                        <Button variant="destructive" size="sm" type="button" onClick={() => handleDeleteSale(sale.id)}>
-                          Delete
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" type="button">Delete</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this sale?</AlertDialogTitle>
+                              <AlertDialogDescription>This permanently removes the sale record. This can&apos;t be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={() => handleDeleteSale(sale.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1 text-sm text-slate-600">
@@ -594,7 +618,7 @@ export default function SalesPage() {
 
           <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3">
             <div className="mb-2 flex gap-4 text-sm font-semibold text-slate-700">
-              <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded-full bg-indigo-500" /> Revenue</span>
+              <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded-full bg-amber-600" /> Revenue</span>
               <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded-full bg-emerald-500" /> Profit</span>
             </div>
             <ResponsiveContainer width="100%" height={220}>
@@ -607,7 +631,7 @@ export default function SalesPage() {
                   contentStyle={{ borderRadius: '10px', borderColor: '#e2e8f0' }}
                 />
                 <Legend />
-                <Bar dataKey="revenue" name="Revenue" radius={[6, 6, 0, 0]} fill="#4f46e5" />
+                <Bar dataKey="revenue" name="Revenue" radius={[6, 6, 0, 0]} fill="#d97706" />
                 <Bar dataKey="profit" name="Profit" radius={[6, 6, 0, 0]} fill="#10b981" />
               </BarChart>
             </ResponsiveContainer>

@@ -69,7 +69,10 @@ function CheckoutForm() {
     setSubmitError(null)
 
     try {
-      // Create order in database
+      // Create order in database. total_amount here is only ever a display
+      // value - the amount actually charged is recomputed server-side from
+      // the live product prices, so a tampered client-side total can't
+      // change what Stripe bills.
       const total = getTotal()
       const orderData = {
         user_id: user?.id,
@@ -93,22 +96,40 @@ function CheckoutForm() {
 
       await orderItemsService.createBulk(orderItems)
 
-      // Create payment intent (you'll need a backend endpoint for this)
-      // For now, we'll simulate the payment
+      // Ask the worker to start a real Stripe PaymentIntent for this
+      // order. It re-derives the amount from the products table itself.
+      const { data: { session } } = await supabase.auth.getSession()
+      const intentRes = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      })
+      const intentData = await intentRes.json()
+      if (!intentRes.ok) {
+        throw new Error(intentData.error || 'Could not start payment')
+      }
+
       const cardElement = elements.getElement(CardElement)
 
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: shippingInfo.name,
-          email: shippingInfo.email,
-          address: {
-            line1: shippingInfo.address,
-            city: shippingInfo.city,
-            state: shippingInfo.state,
-            postal_code: shippingInfo.zipCode,
-            country: shippingInfo.country
+      // This actually charges the card. The order is only ever marked
+      // "paid" by the Stripe webhook once it verifies the charge really
+      // went through - never by this client-side call.
+      const { error, paymentIntent } = await stripe.confirmCardPayment(intentData.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: shippingInfo.name,
+            email: shippingInfo.email,
+            address: {
+              line1: shippingInfo.address,
+              city: shippingInfo.city,
+              state: shippingInfo.state,
+              postal_code: shippingInfo.zipCode,
+              country: shippingInfo.country
+            }
           }
         }
       })
@@ -116,13 +137,13 @@ function CheckoutForm() {
       if (error) {
         throw error
       }
+      if (paymentIntent.status !== 'succeeded' && paymentIntent.status !== 'processing') {
+        throw new Error('Payment was not completed. Please try again.')
+      }
 
-      // Simulate payment success (replace with actual payment processing)
-      await ordersService.updateStatus(order.id, 'paid', paymentMethod.id)
-
-      // Clear cart and redirect to thank-you page
+      // Clear cart and redirect to the order confirmation page
       clearCart()
-      navigate('/thank-you', { state: { orderId: order.id } })
+      navigate('/order-confirmation', { state: { orderId: order.id } })
 
     } catch (error) {
       console.error('Payment failed:', error)
@@ -159,6 +180,9 @@ function CheckoutForm() {
                 </div>
               )
             })}
+          </div>
+          <div className="mt-2 space-y-2 border-t border-slate-200 pt-4 text-sm">
+            <div className="flex justify-between text-slate-500"><span>Shipping</span><span className="font-medium text-emerald-700">Free</span></div>
           </div>
           <div className="mt-2 border-t-2 border-slate-200 pt-4 text-right">
             <p className="text-lg font-bold text-slate-900">Total: ${total.toFixed(2)}</p>
@@ -278,6 +302,10 @@ function CheckoutForm() {
                 }}
               />
             </div>
+            <p className="flex items-center gap-1.5 text-xs text-slate-500">
+              <svg className="size-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"><rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+              Payments are processed securely by Stripe. We never see or store your card details.
+            </p>
           </div>
 
           {submitError ? (

@@ -110,7 +110,8 @@ export default function InventoryPage() {
         setLoading(false);
 
         if (saveError) {
-            setError(saveError.message);
+            console.error(saveError);
+            setError("Couldn't save this item. Check the details and try again.");
             return;
         }
 
@@ -177,15 +178,10 @@ export default function InventoryPage() {
 
     return (
         <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
-            <div className="relative overflow-hidden rounded-2xl bg-slate-900 px-6 py-5 text-white shadow-sm sm:px-8">
-                <div className="absolute -right-12 -top-20 size-64 rounded-full bg-indigo-500/20 blur-3xl" />
-                <div className="absolute -bottom-28 right-40 size-56 rounded-full bg-emerald-400/10 blur-3xl" />
-                <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div className="rounded-2xl bg-slate-900 px-6 py-5 text-white shadow-sm sm:px-8">
+                <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
                     <div>
-                        <p className="text-sm font-semibold tracking-wide text-emerald-400">
-                            COLLECTION MANAGER
-                        </p>
-                        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                             Inventory
                         </h2>
                         <p className="mt-2 max-w-xl text-sm text-slate-300">
@@ -217,10 +213,7 @@ export default function InventoryPage() {
             <div className="grid items-start gap-6 xl:grid-cols-[1fr_1.2fr_1fr]">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
                     <div className="mb-5">
-                        <p className="text-xs font-bold tracking-[0.16em] text-indigo-600">
-                            INVENTORY FORM
-                        </p>
-                        <h3 className="mt-1 text-lg font-bold text-slate-900">
+                        <h3 className="text-lg font-bold text-slate-900">
                             {editingItemId
                                 ? "Edit Inventory Item"
                                 : "Add Inventory Item"}
@@ -362,10 +355,7 @@ export default function InventoryPage() {
                 <div className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md">
                     <div className="flex flex-col gap-3 border-b border-slate-200 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                            <p className="text-xs font-bold tracking-[0.16em] text-indigo-600">
-                                CATALOG
-                            </p>
-                            <h3 className="mt-1 text-lg font-bold text-slate-900">
+                            <h3 className="text-lg font-bold text-slate-900">
                                 Stock list
                             </h3>
                         </div>
@@ -511,10 +501,7 @@ export default function InventoryPage() {
 
                 <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
                     <div>
-                        <p className="text-xs font-bold tracking-[0.16em] text-indigo-600">
-                            ANALYTICS
-                        </p>
-                        <h3 className="mt-1 text-lg font-bold text-slate-900">
+                        <h3 className="text-lg font-bold text-slate-900">
                             Stock Overview
                         </h3>
                         <p className="mt-1 text-sm text-slate-500">

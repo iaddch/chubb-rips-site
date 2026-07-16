@@ -64,8 +64,8 @@ export default function OrderConfirmation() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
         <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-emerald-500 text-2xl text-white">✓</div>
-        <h1 className="mb-1 text-2xl font-semibold text-slate-900">Order Confirmed!</h1>
-        <p className="text-slate-500">Thank you for your purchase. Your order has been successfully placed.</p>
+        <h1 className="mb-1 text-2xl font-semibold text-slate-900">Thank you for your purchase!</h1>
+        <p className="text-slate-500">Your payment was successful and your order is now being processed.</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">

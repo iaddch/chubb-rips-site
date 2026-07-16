@@ -12,9 +12,9 @@ export default function ReviewList({ reviews }) {
                 {new Date(review.created_at).toLocaleDateString()}
               </span>
             </div>
-            <div className="shrink-0 text-base tracking-[0.1em] text-amber-500">
-              {'★'.repeat(review.rating)}
-              {'☆'.repeat(5 - review.rating)}
+            <div className="shrink-0 text-base tracking-[0.1em] text-amber-700">
+              <span aria-hidden="true">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
+              <span className="sr-only">{review.rating} out of 5 stars</span>
             </div>
           </div>
           <p className="break-words text-sm leading-6 text-slate-600 text-pretty">{review.comment}</p>

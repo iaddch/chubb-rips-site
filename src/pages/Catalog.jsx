@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { productsService } from '../services/supabaseService'
-import { useProductStore } from '../store/index'
+import { useProductStore, useCartStore } from '../store/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,9 +12,12 @@ import ProductImage from '@/components/ProductImage'
 export default function Catalog() {
   const navigate = useNavigate()
   const { products, loading, filters, setProducts, setLoading, setFilters } = useProductStore()
+  const addItem = useCartStore((state) => state.addItem)
   const [filteredProducts, setFilteredProducts] = useState([])
   const [sort, setSort] = useState('featured')
   const [error, setError] = useState(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [addedId, setAddedId] = useState(null)
 
   const fetchProducts = async () => {
     try {
@@ -70,34 +73,44 @@ export default function Catalog() {
     <div className="min-h-full bg-slate-50">
       <section className="border-b border-slate-800 bg-slate-900 text-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <p className="text-xs font-bold tracking-[0.22em] text-emerald-400">CHUBB&apos;S VAULT</p>
-          <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">Sealed Pokémon, kept simple.</h1>
+          <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">Sealed Pokémon, kept simple.</h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">Find the boxes, bundles, and collections worth adding to your shelf.</p>
         </div>
       </section>
 
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-8">
-        <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
-          <div className="mb-5 flex items-center justify-between">
+        <aside className="h-fit rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-24">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between p-5 text-left lg:cursor-default lg:pb-0"
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+            aria-controls="catalog-filters"
+          >
             <h2 className="text-base font-semibold text-slate-900">Browse filters</h2>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => setFilters({ search: '', minPrice: 0, maxPrice: 1000, inStockOnly: false })}>Reset</Button>
-          </div>
+            <svg className={`size-4 text-slate-500 transition-transform lg:hidden ${filtersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
 
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="product-search">Search</Label>
-              <Input id="product-search" type="search" placeholder="Search products" value={filters.search} onChange={(e) => setFilters({ search: e.target.value })} />
+          <div id="catalog-filters" className={`${filtersOpen ? 'block' : 'hidden'} px-5 pb-5 lg:block lg:pt-5`}>
+            <div className="mb-5 flex justify-end">
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => setFilters({ search: '', minPrice: 0, maxPrice: 1000, inStockOnly: false })}>Reset</Button>
             </div>
-            <div className="space-y-2">
-              <Label>Price range</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input aria-label="Minimum price" type="number" min="0" placeholder="Min" value={filters.minPrice} onChange={(e) => setFilters({ minPrice: parseFloat(e.target.value) || 0 })} />
-                <Input aria-label="Maximum price" type="number" min="0" placeholder="Max" value={filters.maxPrice} onChange={(e) => setFilters({ maxPrice: parseFloat(e.target.value) || 1000 })} />
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="product-search">Search</Label>
+                <Input id="product-search" type="search" placeholder="Search products" value={filters.search} onChange={(e) => setFilters({ search: e.target.value })} />
               </div>
-            </div>
-            <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-              <Label htmlFor="in-stock" className="cursor-pointer">In stock only</Label>
-              <Switch id="in-stock" checked={filters.inStockOnly} onCheckedChange={(checked) => setFilters({ inStockOnly: checked })} />
+              <div className="space-y-2">
+                <Label>Price range</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input aria-label="Minimum price" type="number" min="0" placeholder="Min" value={filters.minPrice} onChange={(e) => setFilters({ minPrice: parseFloat(e.target.value) || 0 })} />
+                  <Input aria-label="Maximum price" type="number" min="0" placeholder="Max" value={filters.maxPrice} onChange={(e) => setFilters({ maxPrice: parseFloat(e.target.value) || 1000 })} />
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
+                <Label htmlFor="in-stock" className="cursor-pointer">In stock only</Label>
+                <Switch id="in-stock" checked={filters.inStockOnly} onCheckedChange={(checked) => setFilters({ inStockOnly: checked })} />
+              </div>
             </div>
           </div>
         </aside>
@@ -142,8 +155,20 @@ export default function Catalog() {
                     <h3 className="mt-2 line-clamp-2 min-h-12 text-base font-semibold leading-6 text-slate-900">{product.name}</h3>
                     <div className="mt-5 flex items-center justify-between gap-3">
                       <span className="text-lg font-semibold text-slate-900">${Number(product.price ?? 0).toFixed(2)}</span>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/product/${product.id}`)}>View item</Button>
+                      <Button variant="ghost" size="sm" className="text-slate-500" onClick={() => navigate(`/product/${product.id}`)}>View item</Button>
                     </div>
+                    <Button
+                      className="mt-3 w-full"
+                      size="sm"
+                      disabled={product.stock_quantity <= 0}
+                      onClick={() => {
+                        addItem(product, 1)
+                        setAddedId(product.id)
+                        setTimeout(() => setAddedId((current) => (current === product.id ? null : current)), 2000)
+                      }}
+                    >
+                      {product.stock_quantity <= 0 ? 'Sold out' : addedId === product.id ? 'Added ✓' : 'Add to cart'}
+                    </Button>
                   </div>
                 </article>
               ))}

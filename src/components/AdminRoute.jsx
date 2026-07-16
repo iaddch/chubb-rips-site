@@ -1,5 +1,6 @@
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/index'
+import { Button } from '@/components/ui/button'
 
 // Client-side gate for admin-only pages. This is a UX convenience only -
 // the real enforcement is the "is_admin" RLS check on the events/sales/
@@ -22,6 +23,7 @@ export default function AdminRoute({ children }) {
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <h1 className="text-xl font-semibold text-slate-900">Access denied</h1>
         <p className="mt-2 text-sm text-slate-500">Your account does not have admin access.</p>
+        <Button className="mt-5" asChild><Link to="/">Back to store</Link></Button>
       </div>
     )
   }
