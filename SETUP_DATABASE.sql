@@ -93,6 +93,36 @@ CREATE TABLE IF NOT EXISTS order_items (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Profiles table - one row per auth.users row, holds the admin flag.
+-- The admin flag is never writable by the client (no INSERT/UPDATE policy
+-- for regular users below), so it can only be granted by the site owner
+-- running SQL directly in the Supabase dashboard (see bottom of this file).
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Auto-create a profile row (is_admin = false) whenever someone signs up,
+-- so every authenticated user has exactly one profiles row to check against.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id) VALUES (NEW.id)
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_products_set_id ON products(set_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);
@@ -111,29 +141,54 @@ ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policies for products (public read, no write restrictions for MVP)
 DROP POLICY IF EXISTS "Public can read products" ON products;
-CREATE POLICY "Public can read products" 
+CREATE POLICY "Public can read products"
   ON products FOR SELECT USING (true);
 
--- Policies for reviews (public read, authenticated can create)
+-- Policies for reviews (public read, authenticated can create their own)
 DROP POLICY IF EXISTS "Public can read reviews" ON reviews;
-CREATE POLICY "Public can read reviews" 
+CREATE POLICY "Public can read reviews"
   ON reviews FOR SELECT USING (true);
 
--- Policies for events and sales (permissive for the demo/admin dashboard)
+DROP POLICY IF EXISTS "Users can create their own reviews" ON reviews;
+CREATE POLICY "Users can create their own reviews"
+  ON reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Profiles: a user can read (and only read) their own row. There is no
+-- INSERT/UPDATE/DELETE policy here on purpose - granting admin access
+-- must go through the Supabase dashboard/SQL editor with the service role,
+-- never through the client, or any signed-up user could grant themselves
+-- admin.
+DROP POLICY IF EXISTS "Users can read their own profile" ON profiles;
+CREATE POLICY "Users can read their own profile"
+  ON profiles FOR SELECT USING (auth.uid() = id);
+
+-- Policies for events, sales, and inventory (admin dashboard tables).
+-- Only users whose profiles.is_admin = true may read or write these -
+-- being merely logged in is not enough.
 DROP POLICY IF EXISTS "Allow all access to events" ON events;
-CREATE POLICY "Allow all access to events"
-  ON events FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can manage events" ON events;
+CREATE POLICY "Admins can manage events"
+  ON events FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin));
 
 DROP POLICY IF EXISTS "Allow all access to sales" ON sales;
-CREATE POLICY "Allow all access to sales"
-  ON sales FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can manage sales" ON sales;
+CREATE POLICY "Admins can manage sales"
+  ON sales FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin));
 
 DROP POLICY IF EXISTS "Allow all access to inventory" ON inventory;
-CREATE POLICY "Allow all access to inventory"
-  ON inventory FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can manage inventory" ON inventory;
+CREATE POLICY "Admins can manage inventory"
+  ON inventory FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin));
 
 -- Policies for cart (users can only access their own cart)
 DROP POLICY IF EXISTS "Users can manage their cart" ON cart_items;
@@ -181,6 +236,24 @@ VALUES (
 
 -- Verify tables were created
 SELECT 'Setup complete! Tables created:' as status;
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
-AND table_name IN ('products', 'reviews', 'cart_items', 'orders', 'order_items');
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+AND table_name IN ('products', 'reviews', 'cart_items', 'orders', 'order_items', 'profiles');
+
+-- ============================================================
+-- HOW TO MAKE YOURSELF AN ADMIN
+-- ============================================================
+-- 1. Sign up for a normal account at /login on the site (this creates
+--    an auth.users row and, via the trigger above, a profiles row with
+--    is_admin = false).
+-- 2. In the Supabase dashboard, open the SQL Editor (this runs as the
+--    service role, which bypasses RLS, so it's the only place this
+--    should ever be done) and run:
+--
+--      UPDATE profiles SET is_admin = true
+--      WHERE id = (SELECT id FROM auth.users WHERE email = 'you@example.com');
+--
+-- 3. Sign out and back in on the site. The Sales/Inventory admin pages
+--    are now visible and reachable for that account only.
+-- Never expose an "is_admin" toggle in the app UI or API - it must only
+-- ever be settable from the Supabase dashboard.
