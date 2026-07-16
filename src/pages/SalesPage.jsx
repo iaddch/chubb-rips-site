@@ -35,25 +35,39 @@ export default function SalesPage() {
   const [editingSaleId, setEditingSaleId] = useState(null)
   const [inventoryItems, setInventoryItems] = useState([])
   const [inventoryQuery, setInventoryQuery] = useState('')
+  const [eventsLoading, setEventsLoading] = useState(true)
+  const [eventsLoadError, setEventsLoadError] = useState('')
+  const [salesLoading, setSalesLoading] = useState(false)
+  const [salesLoadError, setSalesLoadError] = useState('')
 
   const fetchEvents = async () => {
+    setEventsLoading(true)
+    setEventsLoadError('')
     const { data, error } = await supabase.from('events').select('*').order('date', { ascending: true })
 
-    if (!error) {
+    if (error) {
+      setEventsLoadError('Couldn’t load events. Check your connection and try again.')
+    } else {
       setEvents(data || [])
     }
+    setEventsLoading(false)
   }
 
   const fetchSalesForEvent = async (eventId) => {
+    setSalesLoading(true)
+    setSalesLoadError('')
     const { data, error } = await supabase
       .from('sales')
       .select('*')
       .eq('event_id', eventId)
       .order('created_at', { ascending: false })
 
-    if (!error) {
+    if (error) {
+      setSalesLoadError('Couldn’t load sales for this event.')
+    } else {
       setSales(data || [])
     }
+    setSalesLoading(false)
   }
 
   useEffect(() => {
@@ -302,6 +316,14 @@ export default function SalesPage() {
             <h3 className="text-lg font-bold text-slate-900">Events</h3>
             <span className="text-sm text-slate-500">{events.length} total</span>
           </div>
+          {eventsLoadError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-center text-sm">
+              <p className="text-red-700">{eventsLoadError}</p>
+              <Button variant="outline" size="sm" type="button" className="mt-3" onClick={fetchEvents}>Try again</Button>
+            </div>
+          ) : eventsLoading ? (
+            <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">Loading events…</div>
+          ) : (
           <div className="flex flex-wrap items-stretch gap-4">
             {eventAnalytics.map((event) => (
               <button
@@ -347,6 +369,7 @@ export default function SalesPage() {
               <span className="font-bold">New Event</span>
             </button>
           </div>
+          )}
 
           {showCreateEvent ? (
             <div className="mt-4 border-t border-slate-200 pt-4">
@@ -525,7 +548,14 @@ export default function SalesPage() {
           </div>
 
           <div className="flex max-h-[400px] flex-col gap-3 overflow-y-auto pr-1">
-            {sales.length === 0 ? (
+            {salesLoadError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-center text-sm">
+                <p className="text-red-700">{salesLoadError}</p>
+                <Button variant="outline" size="sm" type="button" className="mt-2" onClick={() => fetchSalesForEvent(selectedEvent.id)}>Try again</Button>
+              </div>
+            ) : salesLoading ? (
+              <p className="text-sm text-slate-500">Loading sales…</p>
+            ) : sales.length === 0 ? (
               <p className="text-sm text-slate-500">No sales logged for this event yet.</p>
             ) : (
               [...sales]
