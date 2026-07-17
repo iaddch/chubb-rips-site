@@ -9,7 +9,6 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from '@/components/ui/navigation-menu'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 export default function Header() {
   const location = useLocation()
@@ -34,67 +33,41 @@ export default function Header() {
     ...(isAdmin ? [{ label: 'Dashboard', to: '/inventory' }] : !user ? [{ label: 'Sign In', to: '/login' }] : []),
   ]
 
+  // Close the mobile menu automatically whenever the route changes (link
+  // click, back/forward, programmatic navigate) so it never lingers open
+  // over the new page.
+  React.useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
+  React.useEffect(() => {
+    if (!menuOpen) return undefined
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [menuOpen])
+
   return (
     <header className="sticky top-0 z-50 bg-black">
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
         <div className="flex items-center gap-2">
-          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-            <PopoverTrigger
-              render={
-                <Button className="group text-gray-400 hover:bg-white/10 hover:text-white md:hidden" size="icon" variant="ghost" aria-label="Toggle navigation menu">
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                    <path className={`origin-center transition ${menuOpen ? 'translate-y-0 rotate-45' : '-translate-y-1.5'}`} d="M4 12h16" />
-                    <path className={`origin-center transition ${menuOpen ? 'rotate-45' : ''}`} d="M4 12h16" />
-                    <path className={`origin-center transition ${menuOpen ? '-translate-y-0 rotate-135' : 'translate-y-1.5'}`} d="M4 12h16" />
-                  </svg>
-                </Button>
-              }
-            />
-            <PopoverContent align="start" className="w-48 p-1.5 md:hidden">
-                <NavigationMenu className="max-w-none *:w-full" viewport={false}>
-                  <NavigationMenuList className="flex-col items-stretch gap-1">
-                  {navLinks.map((link) => (
-                    <NavigationMenuItem className="w-full" key={link.to}>
-                    <NavigationMenuLink
-                      asChild
-                      className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-950 data-active:bg-emerald-50 data-active:text-emerald-700 data-active:hover:bg-emerald-50"
-                      active={location.pathname === link.to}
-                    >
-                      <Link to={link.to} onClick={() => setMenuOpen(false)}>{link.label}</Link>
-                    </NavigationMenuLink>
-                    </NavigationMenuItem>
-                  ))}
-                  </NavigationMenuList>
-                </NavigationMenu>
-                {authLinks.length || user ? (
-                  <NavigationMenu className="mt-1.5 max-w-none border-t border-slate-100 pt-1.5 *:w-full" viewport={false}>
-                    <NavigationMenuList className="flex-col items-stretch gap-1">
-                      {authLinks.map((link) => (
-                        <NavigationMenuItem className="w-full" key={link.to}>
-                          <NavigationMenuLink
-                            asChild
-                            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-950"
-                          >
-                            <Link to={link.to} onClick={() => setMenuOpen(false)}>{link.label}</Link>
-                          </NavigationMenuLink>
-                        </NavigationMenuItem>
-                      ))}
-                      {user ? (
-                        <NavigationMenuItem className="w-full">
-                          <button
-                            type="button"
-                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
-                            onClick={() => { setMenuOpen(false); handleLogout() }}
-                          >
-                            Sign out
-                          </button>
-                        </NavigationMenuItem>
-                      ) : null}
-                    </NavigationMenuList>
-                  </NavigationMenu>
-                ) : null}
-            </PopoverContent>
-          </Popover>
+          <Button
+            className="text-gray-400 hover:bg-white/10 hover:text-white md:hidden"
+            size="icon"
+            variant="ghost"
+            aria-label="Toggle navigation menu"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+              <path className={`origin-center transition ${menuOpen ? 'translate-y-0 rotate-45' : '-translate-y-1.5'}`} d="M4 12h16" />
+              <path className={`origin-center transition ${menuOpen ? 'rotate-45' : ''}`} d="M4 12h16" />
+              <path className={`origin-center transition ${menuOpen ? '-translate-y-0 rotate-135' : 'translate-y-1.5'}`} d="M4 12h16" />
+            </svg>
+          </Button>
 
           <div className="flex items-center gap-7">
             <Link className="flex items-center gap-2 text-white no-underline" to="/">
@@ -151,6 +124,56 @@ export default function Header() {
             </a>
           </Button>
         </div>
+      </div>
+
+      <div
+        id="mobile-nav-menu"
+        className={`absolute inset-x-0 top-full grid overflow-hidden border-b border-slate-900 bg-slate-950/95 shadow-lg shadow-black/40 backdrop-blur-md transition-[grid-template-rows,opacity] duration-300 ease-in-out md:hidden ${
+          menuOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        <nav className="min-h-0 overflow-hidden" aria-label="Mobile navigation">
+          <div className="flex flex-col gap-1 px-4 py-3">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMenuOpen(false)}
+                className={`rounded-lg px-4 py-3 text-base font-medium no-underline transition ${
+                  location.pathname === link.to
+                    ? 'bg-slate-800 text-white'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {authLinks.length || user ? (
+            <div className="flex flex-col gap-1 border-t border-slate-800 px-4 py-3">
+              {authLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg px-4 py-3 text-base font-medium text-gray-400 no-underline transition hover:bg-white/5 hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {user ? (
+                <button
+                  type="button"
+                  className="rounded-lg px-4 py-3 text-left text-base font-medium text-gray-400 transition hover:bg-white/5 hover:text-white"
+                  onClick={() => { setMenuOpen(false); handleLogout() }}
+                >
+                  Sign out
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </nav>
       </div>
     </header>
   )
