@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { useCartStore } from '../store/index'
+import { useCartStore, useSiteSettingsStore } from '../store/index'
 import { ordersService, orderItemsService } from '../services/supabaseService'
 import { supabase } from '../config/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectNative } from '@/components/ui/select-native'
+import { toastManager } from '@/components/ui/toast'
 import ProductImage from '@/components/ProductImage'
 
 // Initialize Stripe (replace with your publishable key)
@@ -143,11 +144,22 @@ function CheckoutForm() {
 
       // Clear cart and redirect to the order confirmation page
       clearCart()
+      toastManager.add({
+        title: 'Payment successful',
+        description: 'Your order has been placed.',
+        type: 'success',
+      })
       navigate('/order-confirmation', { state: { orderId: order.id } })
 
     } catch (error) {
       console.error('Payment failed:', error)
-      setSubmitError(error.message || 'Payment failed. Please check your details and try again.')
+      const message = error.message || 'Payment failed. Please check your details and try again.'
+      setSubmitError(message)
+      toastManager.add({
+        title: 'Payment failed',
+        description: message,
+        type: 'error',
+      })
     } finally {
       setLoading(false)
     }
@@ -335,6 +347,7 @@ function CheckoutForm() {
 export default function Checkout() {
   const navigate = useNavigate()
   const { items } = useCartStore()
+  const checkoutsEnabled = useSiteSettingsStore((state) => state.checkoutsEnabled)
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -345,6 +358,17 @@ export default function Checkout() {
 
   if (items.length === 0) {
     return null
+  }
+
+  if (!checkoutsEnabled) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800" role="alert">
+          We apologize, but checkout is currently unavailable. Please check back later or contact us on Instagram for direct inquiries.
+        </div>
+        <Button variant="outline" className="mt-6" onClick={() => navigate('/cart')}>← Back to cart</Button>
+      </div>
+    )
   }
 
   return (

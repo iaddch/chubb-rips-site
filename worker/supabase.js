@@ -42,6 +42,18 @@ export async function getProductPrices(supabaseUrl, anonKey, productIds) {
   return Object.fromEntries(rows.map((row) => [row.id, Number(row.price)]))
 }
 
+// Public read (no auth needed) of the global checkout kill switch, so a
+// determined caller can't take payment through this endpoint while an
+// admin has paused checkouts, even though the button is only hidden
+// client-side.
+export async function getCheckoutsEnabled(supabaseUrl, anonKey) {
+  const url = `${supabaseUrl}/rest/v1/site_settings?id=eq.1&select=checkouts_enabled`
+  const res = await fetch(url, { headers: { apikey: anonKey } })
+  if (!res.ok) throw new Error('Failed to load site settings')
+  const rows = await res.json()
+  return rows[0]?.checkouts_enabled ?? true
+}
+
 export async function markOrderPaid(supabaseUrl, serviceRoleKey, orderId, paymentIntentId) {
   const url = `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`
   const res = await fetch(url, {

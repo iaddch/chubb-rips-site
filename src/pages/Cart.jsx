@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCartStore } from '../store/index'
+import { useCartStore, useSiteSettingsStore } from '../store/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -20,6 +20,7 @@ import ProductImage from '@/components/ProductImage'
 export default function Cart() {
   const navigate = useNavigate()
   const { items, removeItem, updateItemQuantity, getTotal, clearCart } = useCartStore()
+  const checkoutsEnabled = useSiteSettingsStore((state) => state.checkoutsEnabled)
 
   if (items.length === 0) {
     return (
@@ -101,7 +102,20 @@ export default function Cart() {
               <div className="flex justify-between text-slate-500"><span>Shipping</span><span className="font-medium text-emerald-700">Free</span></div>
             </div>
             <div className="flex items-baseline justify-between py-5"><span className="font-semibold text-slate-900">Estimated total</span><span className="text-2xl font-semibold tracking-tight text-slate-900">${total.toFixed(2)}</span></div>
-            <Button className="w-full" onClick={() => navigate('/checkout')}>Proceed to checkout</Button>
+            {!checkoutsEnabled ? (
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800" role="alert">
+                We apologize, but checkout is currently unavailable. Please check back later or contact us on Instagram for direct inquiries.
+              </div>
+            ) : null}
+            <div className={!checkoutsEnabled ? 'cursor-not-allowed' : undefined}>
+              <Button
+                className="w-full disabled:opacity-40"
+                onClick={() => navigate('/checkout')}
+                disabled={!checkoutsEnabled}
+              >
+                Proceed to checkout
+              </Button>
+            </div>
             <Button variant="outline" className="mt-3 w-full" onClick={() => navigate('/')}>Keep shopping</Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { supabase } from '../config/supabase'
+import { siteSettingsService } from '../services/supabaseService'
+import { useSiteSettingsStore } from '../store/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +17,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { toastManager } from '@/components/ui/toast'
+import PageHeader, { PageHeaderStats } from '@/components/PageHeader'
 
 const initialItem = () => ({
   product_name: '',
@@ -44,6 +48,7 @@ export default function SalesPage() {
   const [saleSuccess, setSaleSuccess] = useState('')
   const [saleWarning, setSaleWarning] = useState(false)
   const [sales, setSales] = useState([])
+  const [allSales, setAllSales] = useState([])
   const [editingSaleId, setEditingSaleId] = useState(null)
   const [inventoryItems, setInventoryItems] = useState([])
   const [inventoryQuery, setInventoryQuery] = useState('')
@@ -51,6 +56,32 @@ export default function SalesPage() {
   const [eventsLoadError, setEventsLoadError] = useState('')
   const [salesLoading, setSalesLoading] = useState(false)
   const [salesLoadError, setSalesLoadError] = useState('')
+  const { checkoutsEnabled, setCheckoutsEnabled } = useSiteSettingsStore()
+  const [checkoutToggleLoading, setCheckoutToggleLoading] = useState(false)
+
+  const handleToggleCheckouts = async () => {
+    setCheckoutToggleLoading(true)
+    try {
+      const updated = await siteSettingsService.setCheckoutsEnabled(!checkoutsEnabled)
+      setCheckoutsEnabled(updated.checkouts_enabled)
+      toastManager.add({
+        title: updated.checkouts_enabled ? 'Checkouts enabled' : 'Checkouts paused',
+        description: updated.checkouts_enabled
+          ? 'Customers can check out again.'
+          : 'Customers will see an apology message at checkout.',
+        type: 'success',
+      })
+    } catch (err) {
+      console.error(err)
+      toastManager.add({
+        title: 'Update failed',
+        description: "Couldn't update checkout status. Try again.",
+        type: 'error',
+      })
+    } finally {
+      setCheckoutToggleLoading(false)
+    }
+  }
 
   const fetchEvents = async () => {
     setEventsLoading(true)
@@ -82,8 +113,16 @@ export default function SalesPage() {
     setSalesLoading(false)
   }
 
+  const fetchAllSales = async () => {
+    const { data, error } = await supabase.from('sales').select('*')
+    if (!error) {
+      setAllSales(data || [])
+    }
+  }
+
   useEffect(() => {
     fetchEvents()
+    fetchAllSales()
   }, [])
 
   useEffect(() => {
@@ -198,6 +237,11 @@ export default function SalesPage() {
     if (error) {
       console.error(error)
       setSaleError('Couldn’t save this sale. Check the details and try again.')
+      toastManager.add({
+        title: 'Sale not saved',
+        description: 'Couldn’t save this sale. Check the details and try again.',
+        type: 'error',
+      })
       return
     }
 
@@ -238,9 +282,17 @@ export default function SalesPage() {
         ? `${editingSaleId ? 'Sale updated' : 'Sale logged'}, but stock for ${stockSyncFailures.join(', ')} couldn’t be updated automatically — adjust it manually in Inventory.`
         : editingSaleId ? 'Sale updated successfully.' : 'Sale logged successfully.'
     )
+    toastManager.add({
+      title: editingSaleId ? 'Sale updated' : 'Sale logged',
+      description: stockSyncFailures.length
+        ? `Stock for ${stockSyncFailures.join(', ')} couldn’t be updated automatically.`
+        : editingSaleId ? 'The sale was updated successfully.' : 'The sale was logged successfully.',
+      type: stockSyncFailures.length ? 'warning' : 'success',
+    })
     setSaleItems([initialItem()])
     setEditingSaleId(null)
     fetchSalesForEvent(selectedEvent.id)
+    fetchAllSales()
   }
 
   const handleEditSale = (sale) => {
@@ -273,12 +325,23 @@ export default function SalesPage() {
     if (error) {
       console.error(error)
       setSaleError('Couldn’t delete this sale. Try again.')
+      toastManager.add({
+        title: 'Sale not deleted',
+        description: 'Couldn’t delete this sale. Try again.',
+        type: 'error',
+      })
       return
     }
 
     setSales((current) => current.filter((sale) => sale.id !== saleId))
     setSaleWarning(false)
     setSaleSuccess('Sale deleted successfully.')
+    toastManager.add({
+      title: 'Sale deleted',
+      description: 'The sale was removed successfully.',
+      type: 'success',
+    })
+    fetchAllSales()
   }
 
   const totalRevenue = useMemo(() => {
@@ -310,7 +373,7 @@ export default function SalesPage() {
 
   const eventAnalytics = useMemo(() => {
     return events.map((event) => {
-      const eventSales = sales.filter((sale) => sale.event_id === event.id)
+      const eventSales = allSales.filter((sale) => sale.event_id === event.id)
       const revenue = eventSales.reduce((sum, sale) => {
         return sum + (sale.items || []).reduce((itemSum, item) => {
           return itemSum + Number(item.sold_price || 0) * Number(item.quantity || 0)
@@ -327,15 +390,51 @@ export default function SalesPage() {
 
       return { ...event, revenue, profit }
     })
-  }, [events, sales])
+  }, [events, allSales])
 
   if (!selectedEvent) {
     return (
-      <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Event &amp; Sales Dashboard</h2>
-            <p className="mt-1 text-sm text-slate-500">Manage events and log sales for each pop-up or market day.</p>
+      <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
+        <PageHeader
+          title="Event & Sales Dashboard"
+          subtitle="Manage events and log sales for each pop-up or market day."
+          actions={
+            <PageHeaderStats
+              stats={[
+                { label: 'events', value: events.length },
+                { label: 'total revenue', value: `$${eventAnalytics.reduce((sum, event) => sum + event.revenue, 0).toFixed(0)}` },
+              ]}
+            />
+          }
+        />
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-white shadow-lg shadow-black/10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold">Store Operations: Checkout Control</h3>
+              <p className="mt-1 text-sm text-slate-400">Instantly pause checkout site-wide if something needs attention.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {checkoutsEnabled ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
+                  <span className="size-1.5 rounded-full bg-emerald-400" />
+                  Checkouts Enabled
+                </span>
+              ) : (
+                <span className="inline-flex animate-pulse items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400 ring-1 ring-red-500/20">
+                  <span className="size-1.5 rounded-full bg-red-400" />
+                  Checkouts Paused
+                </span>
+              )}
+              <Button
+                type="button"
+                variant={checkoutsEnabled ? 'destructive' : 'default'}
+                disabled={checkoutToggleLoading}
+                onClick={handleToggleCheckouts}
+              >
+                {checkoutToggleLoading ? 'Updating...' : checkoutsEnabled ? 'Disable Checkouts' : 'Enable Checkouts'}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -453,18 +552,16 @@ export default function SalesPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{selectedEvent.name}</h2>
-          <p className="mt-1 text-sm text-slate-500">{selectedEvent.address} • {selectedEvent.date}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+    <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
+      <PageHeader
+        title={selectedEvent.name}
+        subtitle={`${selectedEvent.address} • ${selectedEvent.date}`}
+        actions={
           <Button variant="secondary" type="button" onClick={() => setSelectedEvent(null)}>
             Back to Dashboard
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid items-start gap-6 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">

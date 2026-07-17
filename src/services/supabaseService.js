@@ -266,6 +266,69 @@ export const ordersService = {
   // kind of client-trusted authorization field this app used to have.
 }
 
+// ============ UPCOMING SHOWS ============
+export const upcomingShowsService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('upcoming_shows')
+      .select('*')
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return data
+  },
+
+  create: async (showData) => {
+    const { data, error } = await supabase
+      .from('upcoming_shows')
+      .insert([showData])
+      .select()
+    if (error) throw error
+    return data[0]
+  },
+
+  update: async (id, updates) => {
+    const { data, error } = await supabase
+      .from('upcoming_shows')
+      .update(updates)
+      .eq('id', id)
+      .select()
+    if (error) throw error
+    return data[0]
+  },
+
+  delete: async (id) => {
+    const { error } = await supabase.from('upcoming_shows').delete().eq('id', id)
+    if (error) throw error
+  },
+}
+
+// ============ SITE SETTINGS ============
+export const siteSettingsService = {
+  // Get the single global config row
+  get: async () => {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('*')
+      .eq('id', 1)
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  // Flip the checkout kill switch. RLS only lets this succeed for admins -
+  // see "Admins can update site settings" in SETUP_DATABASE.sql.
+  setCheckoutsEnabled: async (enabled) => {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .update({ checkouts_enabled: enabled, updated_at: new Date().toISOString() })
+      .eq('id', 1)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+}
+
 // ============ ORDER ITEMS ============
 export const orderItemsService = {
   // Create order items (bulk insert)

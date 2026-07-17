@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { supabase } from "../config/supabase";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,33 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectNative } from "@/components/ui/select-native";
+import {
+    Select,
+    SelectItem,
+    SelectPopup,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import PageHeader, { PageHeaderStats } from "@/components/PageHeader";
+import { toastManager } from "@/components/ui/toast";
+
+const SORT_OPTIONS = [
+    { label: "Alphabetical (A–Z)", value: "name-asc" },
+    { label: "Alphabetical (Z–A)", value: "name-desc" },
+    { label: "Price: Low to High", value: "price-low" },
+    { label: "Price: High to Low", value: "price-high" },
+];
 
 const initialForm = () => ({
     name: "",
@@ -112,6 +140,11 @@ export default function InventoryPage() {
         if (saveError) {
             console.error(saveError);
             setError("Couldn't save this item. Check the details and try again.");
+            toastManager.add({
+                title: "Item not saved",
+                description: "Couldn't save this item. Check the details and try again.",
+                type: "error",
+            });
             return;
         }
 
@@ -120,6 +153,13 @@ export default function InventoryPage() {
                 ? "Inventory item updated successfully."
                 : "Inventory item added successfully.",
         );
+        toastManager.add({
+            title: editingItemId ? "Item updated" : "Item added",
+            description: editingItemId
+                ? `${itemValues.name} was updated successfully.`
+                : `${itemValues.name} was added to inventory.`,
+            type: "success",
+        });
         setForm(initialForm());
         setEditingItemId(null);
         fetchInventory();
@@ -141,6 +181,35 @@ export default function InventoryPage() {
         setForm(initialForm());
         setEditingItemId(null);
         setError("");
+    };
+
+    const handleDelete = async (item) => {
+        const { error: deleteError } = await supabase
+            .from("inventory")
+            .delete()
+            .eq("id", item.id);
+
+        if (deleteError) {
+            console.error(deleteError);
+            toastManager.add({
+                title: "Item not removed",
+                description: `Couldn't remove ${item.name}. Try again.`,
+                type: "error",
+            });
+            return;
+        }
+
+        setInventoryItems((current) =>
+            current.filter((current_item) => current_item.id !== item.id),
+        );
+        if (editingItemId === item.id) {
+            cancelEdit();
+        }
+        toastManager.add({
+            title: "Item removed",
+            description: `${item.name} was removed from inventory.`,
+            type: "success",
+        });
     };
 
     const pieData = useMemo(() => {
@@ -178,37 +247,18 @@ export default function InventoryPage() {
 
     return (
         <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
-            <div className="rounded-2xl bg-slate-900 px-6 py-5 text-white shadow-sm sm:px-8">
-                <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-                    <div>
-                        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                            Inventory
-                        </h2>
-                        <p className="mt-2 max-w-xl text-sm text-slate-300">
-                            Manage the cards and sealed products that power
-                            Chubb&apos;s Vault.
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-2 divide-x divide-white/15 overflow-hidden rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm">
-                        <div className="px-5 py-3">
-                            <strong className="block text-xl font-semibold">
-                                {totalQuantity}
-                            </strong>
-                            <span className="text-xs text-slate-300">
-                                items in stock
-                            </span>
-                        </div>
-                        <div className="px-5 py-3">
-                            <strong className="block text-xl font-semibold">
-                                ${totalInventoryValue.toFixed(0)}
-                            </strong>
-                            <span className="text-xs text-slate-300">
-                                inventory value
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                title="Inventory"
+                subtitle="Manage the cards and sealed products that power Chubb's Vault."
+                actions={
+                    <PageHeaderStats
+                        stats={[
+                            { label: "items in stock", value: totalQuantity },
+                            { label: "inventory value", value: `$${totalInventoryValue.toFixed(0)}` },
+                        ]}
+                    />
+                }
+            />
 
             <div className="grid items-start gap-6 xl:grid-cols-[1fr_1.2fr_1fr]">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
@@ -386,45 +436,44 @@ export default function InventoryPage() {
                                 >
                                     Sort by
                                 </Label>
-                                <SelectNative
-                                    id="inventory-sort"
-                                    className="h-8 text-xs"
+                                <Select
                                     value={sortOption}
-                                    onChange={(e) =>
-                                        setSortOption(e.target.value)
-                                    }
+                                    onValueChange={setSortOption}
+                                    items={SORT_OPTIONS}
                                 >
-                                    <option value="name-asc">
-                                        Alphabetical (A–Z)
-                                    </option>
-                                    <option value="name-desc">
-                                        Alphabetical (Z–A)
-                                    </option>
-                                    <option value="price-low">
-                                        Price: Low to High
-                                    </option>
-                                    <option value="price-high">
-                                        Price: High to Low
-                                    </option>
-                                </SelectNative>
+                                    <SelectTrigger
+                                        id="inventory-sort"
+                                        size="sm"
+                                        className="min-w-40 text-xs"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectPopup>
+                                        {SORT_OPTIONS.map(({ label, value }) => (
+                                            <SelectItem key={value} value={value}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectPopup>
+                                </Select>
                             </div>
                         </div>
                     </div>
 
-                    <div className="w-full max-w-full overflow-x-hidden">
+                    <div className="w-full max-w-full overflow-x-hidden overflow-y-auto max-h-[600px]">
                         <Table className="w-full table-fixed text-left text-sm">
-                            <TableHeader className="bg-slate-900 text-xs font-medium uppercase tracking-wide text-white">
+                            <TableHeader className="sticky top-0 z-10 bg-slate-900 text-xs font-medium uppercase tracking-wide text-white">
                                 <TableRow className="hover:bg-transparent">
-                                    <TableHead className="w-[40%] px-5 py-3">
+                                    <TableHead className="w-[34%] px-3 py-3 sm:w-[40%] sm:px-5">
                                         Product Name
                                     </TableHead>
-                                    <TableHead className="w-[20%] px-5 py-3">
+                                    <TableHead className="w-[21%] px-3 py-3 sm:w-[20%] sm:px-5">
                                         Current Qty
                                     </TableHead>
-                                    <TableHead className="w-[20%] px-5 py-3">
+                                    <TableHead className="w-[21%] px-3 py-3 sm:w-[20%] sm:px-5">
                                         Price Bought At
                                     </TableHead>
-                                    <TableHead className="w-[20%] px-5 py-3 text-right">
+                                    <TableHead className="w-[24%] px-3 py-3 text-right sm:w-[20%] sm:px-5">
                                         Action
                                     </TableHead>
                                 </TableRow>
@@ -466,30 +515,74 @@ export default function InventoryPage() {
                                             key={item.id}
                                             className="transition hover:bg-slate-50/80"
                                         >
-                                            <TableCell className="whitespace-normal break-words px-5 py-4 font-medium text-slate-800">
+                                            <TableCell className="whitespace-normal break-words px-3 py-4 font-medium text-slate-800 sm:px-5">
                                                 {item.name}
                                             </TableCell>
-                                            <TableCell className="px-5 py-4 text-slate-600">
+                                            <TableCell className="px-3 py-4 text-slate-600 sm:px-5">
                                                 {item.qty}
                                             </TableCell>
-                                            <TableCell className="px-5 py-4 text-slate-600">
+                                            <TableCell className="px-3 py-4 text-slate-600 sm:px-5">
                                                 $
                                                 {Number(
                                                     item.price_bought_at || 0,
                                                 ).toFixed(2)}
                                             </TableCell>
-                                            <TableCell className="px-5 py-4 text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleEdit(item)
-                                                    }
-                                                >
-                                                    Edit
-                                                </Button>
+                                            <TableCell className="px-3 py-4 text-right sm:px-5">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 sm:hidden"
+                                                        type="button"
+                                                        aria-label={`Edit ${item.name}`}
+                                                        onClick={() =>
+                                                            handleEdit(item)
+                                                        }
+                                                    >
+                                                        <PencilIcon />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="hidden text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 sm:inline-flex"
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleEdit(item)
+                                                        }
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon-sm"
+                                                                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                                type="button"
+                                                                aria-label={`Remove ${item.name}`}
+                                                            >
+                                                                <Trash2Icon />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Remove this item?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This permanently removes &ldquo;{item.name}&rdquo; from inventory. This can&apos;t be undone.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    className="bg-red-600 text-white hover:bg-red-700"
+                                                                    onClick={() => handleDelete(item)}
+                                                                >
+                                                                    Remove
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))

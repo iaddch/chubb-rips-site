@@ -1,5 +1,5 @@
 import { createPaymentIntent, verifyStripeSignature } from './stripe.js'
-import { getOwnOrder, getOwnOrderItems, getProductPrices, markOrderPaid } from './supabase.js'
+import { getCheckoutsEnabled, getOwnOrder, getOwnOrderItems, getProductPrices, markOrderPaid } from './supabase.js'
 
 // This worker only ever handles the two payment endpoints below. Every
 // other request (the whole SPA) falls straight through to static assets.
@@ -53,6 +53,11 @@ async function handleCreatePaymentIntent(request, env) {
   const anonKey = env.SUPABASE_ANON_KEY
 
   try {
+    const checkoutsEnabled = await getCheckoutsEnabled(supabaseUrl, anonKey)
+    if (!checkoutsEnabled) {
+      return json({ error: 'Checkout is currently unavailable' }, 403)
+    }
+
     // Reading through the caller's own access token means RLS returns
     // nothing at all if this order doesn't belong to them.
     const order = await getOwnOrder(supabaseUrl, anonKey, accessToken, orderId)

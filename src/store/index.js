@@ -111,6 +111,13 @@ export const useCartStore = create((set, get) => ({
   },
 }))
 
+export const useSiteSettingsStore = create((set) => ({
+  checkoutsEnabled: true,
+  settingsLoaded: false,
+
+  setCheckoutsEnabled: (checkoutsEnabled) => set({ checkoutsEnabled, settingsLoaded: true }),
+}))
+
 export const useProductStore = create((set) => ({
   products: [],
   loading: false,

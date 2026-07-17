@@ -26,7 +26,8 @@ export default function Header() {
 
   const navLinks = [
     { label: 'Shop', to: '/' },
-    ...(isAdmin ? [{ label: 'Sales', to: '/sales' }, { label: 'Inventory', to: '/inventory' }] : []),
+    { label: 'Where to find us', to: '/shows' },
+    ...(isAdmin ? [{ label: 'Sales', to: '/sales' }, { label: 'Inventory', to: '/inventory' }, { label: 'Manage Shows', to: '/shows-admin' }] : []),
   ]
 
   const authLinks = [
@@ -95,7 +96,7 @@ export default function Header() {
 
           <div className="flex items-center gap-7">
             <Link className="flex items-center gap-2 text-white no-underline" to="/">
-              <span className="grid size-8 place-items-center rounded-lg bg-emerald-500 text-sm font-black text-white shadow-sm">C</span>
+              <img src="/oshawott (1).png" alt="" className="size-8 shrink-0 rounded-lg object-cover shadow-sm" />
               <span className="hidden text-base font-semibold tracking-tight sm:inline">Chubb&apos;s Vault</span>
             </Link>
 

@@ -11,6 +11,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@stripe/react-stripe-js": "^2.9.0",
     "@stripe/stripe-js": "^4.10.0",
