@@ -39,15 +39,17 @@ export default function Header() {
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
         <div className="flex items-center gap-2">
           <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-            <PopoverTrigger asChild>
-              <Button className="group text-gray-400 hover:bg-white/10 hover:text-white md:hidden" size="icon" variant="ghost" aria-label="Toggle navigation menu">
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                <path className={`origin-center transition ${menuOpen ? 'translate-y-0 rotate-45' : '-translate-y-1.5'}`} d="M4 12h16" />
-                <path className={`origin-center transition ${menuOpen ? 'rotate-45' : ''}`} d="M4 12h16" />
-                <path className={`origin-center transition ${menuOpen ? '-translate-y-0 rotate-135' : 'translate-y-1.5'}`} d="M4 12h16" />
-              </svg>
-              </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+              render={
+                <Button className="group text-gray-400 hover:bg-white/10 hover:text-white md:hidden" size="icon" variant="ghost" aria-label="Toggle navigation menu">
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                    <path className={`origin-center transition ${menuOpen ? 'translate-y-0 rotate-45' : '-translate-y-1.5'}`} d="M4 12h16" />
+                    <path className={`origin-center transition ${menuOpen ? 'rotate-45' : ''}`} d="M4 12h16" />
+                    <path className={`origin-center transition ${menuOpen ? '-translate-y-0 rotate-135' : 'translate-y-1.5'}`} d="M4 12h16" />
+                  </svg>
+                </Button>
+              }
+            />
             <PopoverContent align="start" className="w-48 p-1.5 md:hidden">
                 <NavigationMenu className="max-w-none *:w-full" viewport={false}>
                   <NavigationMenuList className="flex-col items-stretch gap-1">
