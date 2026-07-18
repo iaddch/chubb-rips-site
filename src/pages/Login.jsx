@@ -76,10 +76,7 @@ export default function Login() {
           <span className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-emerald-500 text-white shadow-sm shadow-emerald-500/30">
             <LockIcon className="size-5" />
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">{isSignUp ? 'Create New Account' : 'Admin Login'}</h1>
-          <p className="mt-2 text-sm text-slate-400">
-            {isSignUp ? "Set up access to manage Chubb's Vault." : 'Sign in to manage inventory, sales, and orders.'}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">{isSignUp ? 'Create New Account' : 'Login'}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,7 +143,7 @@ export default function Login() {
             className="text-sm font-medium text-indigo-400 hover:bg-white/5 hover:text-indigo-300"
           >
             {isSignUp
-              ? 'Already have an account? Admin Login'
+              ? 'Already have an account? Login'
               : 'Need an account? Create New Account'
             }
           </Button>
