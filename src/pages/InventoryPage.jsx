@@ -244,6 +244,30 @@ export default function InventoryPage() {
             ),
         [inventoryItems],
     );
+    const totalCardsValue = useMemo(
+        () =>
+            inventoryItems
+                .filter((item) => item.type === "Card")
+                .reduce(
+                    (sum, item) =>
+                        sum +
+                        Number(item.qty || 0) * Number(item.price_bought_at || 0),
+                    0,
+                ),
+        [inventoryItems],
+    );
+    const totalSealedValue = useMemo(
+        () =>
+            inventoryItems
+                .filter((item) => item.type === "Sealed Product")
+                .reduce(
+                    (sum, item) =>
+                        sum +
+                        Number(item.qty || 0) * Number(item.price_bought_at || 0),
+                    0,
+                ),
+        [inventoryItems],
+    );
 
     return (
         <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10">
@@ -653,6 +677,22 @@ export default function InventoryPage() {
                             </strong>
                             <span className="mt-1 block text-xs text-slate-500">
                                 Total Value
+                            </span>
+                        </div>
+                        <div className="rounded-xl bg-muted p-3">
+                            <strong className="block text-lg font-semibold text-slate-900">
+                                ${totalCardsValue.toFixed(2)}
+                            </strong>
+                            <span className="mt-1 block text-xs text-slate-500">
+                                Cards Value
+                            </span>
+                        </div>
+                        <div className="rounded-xl bg-muted p-3">
+                            <strong className="block text-lg font-semibold text-slate-900">
+                                ${totalSealedValue.toFixed(2)}
+                            </strong>
+                            <span className="mt-1 block text-xs text-slate-500">
+                                Sealed Value
                             </span>
                         </div>
                     </div>
