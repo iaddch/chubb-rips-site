@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-const darkInputClassName = 'border-slate-800 bg-slate-900 shadow-none has-focus-visible:border-indigo-500 has-focus-visible:ring-[3px] has-focus-visible:ring-indigo-500/40'
+const darkInputClassName = 'border-slate-800 bg-slate-900 text-slate-100 shadow-none has-focus-visible:border-indigo-500 has-focus-visible:ring-[3px] has-focus-visible:ring-indigo-500/40'
 
 export default function Login() {
   const navigate = useNavigate()
