@@ -6,7 +6,7 @@
 //    browser) strictly to write the verified payment result back
 
 export async function getOwnOrder(supabaseUrl, anonKey, accessToken, orderId) {
-  const url = `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,status`
+  const url = `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,status,shipping_address`
   const res = await fetch(url, {
     headers: {
       apikey: anonKey,

@@ -14,11 +14,19 @@
     "nodejs_compat"
   ],
   // Public values only - same ones used by the frontend (VITE_SUPABASE_*).
-  // Real secrets (Stripe keys, the Supabase service role key) must never
-  // go here; set those with `wrangler secret put <NAME>` instead, and see
-  // .dev.vars.example for local development.
+  // Real secrets (Stripe keys, the Supabase service role key, the Shippo
+  // API key) must never go here; set those with `wrangler secret put
+  // <NAME>` instead, and see .dev.vars for local development.
   "vars": {
     "SUPABASE_URL": "https://gfmdzrwhwkvuxisgxlsf.supabase.co",
-    "SUPABASE_ANON_KEY": "sb_publishable_JTKxrYcJYMnVfAqLe9BN1Q_xb2yAe5Q"
+    "SUPABASE_ANON_KEY": "sb_publishable_JTKxrYcJYMnVfAqLe9BN1Q_xb2yAe5Q",
+    // Ship-from address used to rate every shipment via Shippo (see
+    // worker/shipping.js). Not a secret - just fill in the real values.
+    "STORE_NAME": "Chubb's Vault",
+    "STORE_ADDRESS_STREET1": "8005 SW 107th Ave",
+    "STORE_ADDRESS_CITY": "Miami",
+    "STORE_ADDRESS_STATE": "FL",
+    "STORE_ADDRESS_ZIP": "33173",
+    "STORE_ADDRESS_COUNTRY": "US"
   }
 }

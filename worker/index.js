@@ -1,10 +1,12 @@
 import { createPaymentIntent, verifyStripeSignature } from './stripe.js'
 import { getCheckoutsEnabled, getOwnOrder, getOwnOrderItems, getProductPrices, markOrderPaid } from './supabase.js'
+import { getShippingRates, getRateById } from './shipping.js'
+import { getTaxForAddress } from './tax.js'
 
-// This worker only ever handles the two payment endpoints below. Every
-// other request (the whole SPA) falls straight through to static assets.
-// Both endpoints exist specifically so the "was this order actually paid"
-// decision never has to be trusted from the browser:
+// This worker only ever handles the API endpoints below. Every other
+// request (the whole SPA) falls straight through to static assets.
+// The payment endpoints exist specifically so the "was this order
+// actually paid" decision never has to be trusted from the browser:
 //  - the amount charged is recomputed here from the live products table,
 //    so a tampered client-side price can't reach Stripe
 //  - the order is only ever marked "paid" from the webhook below, after
@@ -12,6 +14,10 @@ import { getCheckoutsEnabled, getOwnOrder, getOwnOrderItems, getProductPrices, m
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
+
+    if (url.pathname === '/api/shipping-quote' && request.method === 'POST') {
+      return handleShippingQuote(request, env)
+    }
 
     if (url.pathname === '/api/create-payment-intent' && request.method === 'POST') {
       return handleCreatePaymentIntent(request, env)
@@ -30,6 +36,52 @@ function json(body, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+// Unauthenticated on purpose: it only reads public product prices (same
+// data already shown in the storefront) and returns a rate/tax estimate -
+// nothing here reads or writes anything user-specific. The real charge is
+// still only ever computed from scratch in handleCreatePaymentIntent below.
+async function handleShippingQuote(request, env) {
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return json({ error: 'Invalid request body' }, 400)
+  }
+
+  const items = Array.isArray(body.items) ? body.items : []
+  const address = body.address || {}
+  if (items.length === 0) {
+    return json({ error: 'No items to quote' }, 400)
+  }
+  if (!address.zipCode || !address.state) {
+    return json({ error: 'A destination state and ZIP/postal code are required' }, 400)
+  }
+
+  const supabaseUrl = env.SUPABASE_URL
+  const anonKey = env.SUPABASE_ANON_KEY
+
+  try {
+    const prices = await getProductPrices(supabaseUrl, anonKey, items.map((item) => item.product_id))
+    const subtotal = items.reduce((sum, item) => {
+      const price = prices[item.product_id]
+      if (price === undefined) return sum
+      return sum + price * item.quantity
+    }, 0)
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0)
+
+    const options = await getShippingRates({ env, destination: address, totalQuantity })
+    if (options.length === 0) {
+      return json({ error: 'No shipping rates are available for this address' }, 422)
+    }
+    const tax = getTaxForAddress({ subtotal, destination: address })
+
+    return json({ subtotal, options, tax })
+  } catch (err) {
+    console.error('shipping-quote error:', err)
+    return json({ error: 'Could not calculate shipping and tax' }, 500)
+  }
 }
 
 async function handleCreatePaymentIntent(request, env) {
@@ -74,11 +126,26 @@ async function handleCreatePaymentIntent(request, env) {
     }
 
     const prices = await getProductPrices(supabaseUrl, anonKey, items.map((item) => item.product_id))
-    const total = items.reduce((sum, item) => {
+    const subtotal = items.reduce((sum, item) => {
       const price = prices[item.product_id]
       if (price === undefined) throw new Error(`Unknown product ${item.product_id}`)
       return sum + price * item.quantity
     }, 0)
+
+    // Shipping cost and tax are never trusted from the client. Tax is
+    // re-derived here the same way subtotal is re-derived from live
+    // product prices above. Shipping is re-verified by asking Shippo for
+    // the exact rate object the customer picked (by id) rather than
+    // trusting its dollar amount or re-running a fresh rate search that
+    // could legitimately come back different.
+    const address = order.shipping_address || {}
+    const shippingRate = await getRateById(env, address.shipping_method)
+    if (!shippingRate) {
+      return json({ error: 'Selected shipping rate is no longer valid - please recalculate shipping' }, 400)
+    }
+    const tax = getTaxForAddress({ subtotal, destination: address })
+
+    const total = subtotal + shippingRate.amount + tax.amount
     const amountCents = Math.round(total * 100)
     if (amountCents <= 0) {
       return json({ error: 'Order total must be greater than zero' }, 400)

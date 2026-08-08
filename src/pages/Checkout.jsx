@@ -1,16 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { useCartStore, useSiteSettingsStore } from '../store/index'
 import { ordersService, orderItemsService } from '../services/supabaseService'
+import { fetchShippingQuote } from '../services/shippingService'
 import { supabase } from '../config/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectNative } from '@/components/ui/select-native'
+import { Spinner } from '@/components/ui/spinner'
 import { toastManager } from '@/components/ui/toast'
 import ProductImage from '@/components/ProductImage'
+import ShippingOptions from '@/components/checkout/ShippingOptions'
+
+// A ZIP/postal code this short couldn't possibly resolve to a real rate,
+// so there's no point firing a quote request for it yet.
+const isPostalCodeQuotable = (zipCode) => zipCode.trim().length >= 3
 
 // Initialize Stripe (replace with your publishable key)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here')
@@ -33,6 +40,61 @@ function CheckoutForm() {
     zipCode: '',
     country: 'US'
   })
+
+  // Real-time shipping/tax quote from /api/shipping-quote, and which of
+  // its options the customer picked. Reset to null whenever the address
+  // or cart contents change enough to invalidate the previous quote.
+  const [quote, setQuote] = useState(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteError, setQuoteError] = useState(null)
+  const [selectedShippingId, setSelectedShippingId] = useState(null)
+  const debounceRef = useRef(null)
+
+  const addressReadyForQuote = Boolean(shippingInfo.state.trim()) && isPostalCodeQuotable(shippingInfo.zipCode)
+
+  const runQuote = useCallback(async () => {
+    if (items.length === 0) return
+    setQuoteLoading(true)
+    setQuoteError(null)
+    try {
+      const result = await fetchShippingQuote({
+        items,
+        address: {
+          name: shippingInfo.name,
+          street: shippingInfo.address,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          zipCode: shippingInfo.zipCode,
+          country: shippingInfo.country,
+        },
+      })
+      setQuote(result)
+      setSelectedShippingId((prev) =>
+        prev && result.options.some((option) => option.id === prev) ? prev : result.options[0]?.id ?? null
+      )
+    } catch (error) {
+      setQuote(null)
+      setSelectedShippingId(null)
+      setQuoteError(error.message || 'Could not calculate shipping and tax')
+    } finally {
+      setQuoteLoading(false)
+    }
+  }, [items, shippingInfo])
+
+  // Auto-trigger once the address is complete enough to quote, debounced
+  // so quick typing (or item quantity changes) doesn't fire a request per
+  // keystroke. Also re-fires if the cart contents change, since a
+  // different subtotal can flip the free-shipping threshold or tax amount.
+  useEffect(() => {
+    if (!addressReadyForQuote) return undefined
+
+    debounceRef.current = setTimeout(() => {
+      runQuote()
+    }, 500)
+
+    return () => clearTimeout(debounceRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addressReadyForQuote, shippingInfo.state, shippingInfo.zipCode, shippingInfo.country, items])
 
   useEffect(() => {
     // Get current user
@@ -59,6 +121,14 @@ function CheckoutForm() {
       ...prev,
       [name]: value
     }))
+
+    // Any edit to the destination invalidates the last quote - clear it so
+    // stale rates/tax can't linger while the debounced re-fetch catches up.
+    if (name === 'zipCode' || name === 'state' || name === 'country') {
+      setQuote(null)
+      setSelectedShippingId(null)
+      setQuoteError(null)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -66,22 +136,30 @@ function CheckoutForm() {
 
     if (!stripe || !elements) return
 
+    if (!quote || !selectedShippingId) {
+      setSubmitError('Please enter your shipping address and select a shipping method before paying.')
+      return
+    }
+
     setLoading(true)
     setSubmitError(null)
 
     try {
       // Create order in database. total_amount here is only ever a display
       // value - the amount actually charged is recomputed server-side from
-      // the live product prices, so a tampered client-side total can't
+      // the live product prices plus the shipping method/tax re-derived
+      // from this same address, so a tampered client-side total can't
       // change what Stripe bills.
-      const total = getTotal()
+      const subtotal = getTotal()
+      const shippingOption = quote.options.find((option) => option.id === selectedShippingId)
+      const total = subtotal + (shippingOption?.amount || 0) + (quote.tax?.amount || 0)
       const orderData = {
         user_id: user?.id,
         user_email: shippingInfo.email,
         user_name: shippingInfo.name,
         total_amount: total,
         status: 'pending',
-        shipping_address: shippingInfo
+        shipping_address: { ...shippingInfo, shipping_method: selectedShippingId }
       }
 
       const order = await ordersService.create(orderData)
@@ -165,7 +243,12 @@ function CheckoutForm() {
     }
   }
 
-  const total = getTotal()
+  const subtotal = getTotal()
+  const selectedShippingOption = quote?.options.find((option) => option.id === selectedShippingId) || null
+  const shippingAmount = selectedShippingOption?.amount ?? null
+  const taxAmount = quote?.tax?.amount ?? null
+  const total = subtotal + (shippingAmount || 0) + (taxAmount || 0)
+  const readyToPay = Boolean(quote && selectedShippingId) && !quoteLoading
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -194,7 +277,30 @@ function CheckoutForm() {
             })}
           </div>
           <div className="mt-2 space-y-2 border-t border-slate-200 pt-4 text-sm">
-            <div className="flex justify-between text-slate-500"><span>Shipping</span><span className="font-medium text-emerald-700">Free</span></div>
+            <div className="flex justify-between text-slate-500">
+              <span>Subtotal</span>
+              <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Estimated Shipping</span>
+              {quoteLoading ? (
+                <Spinner className="size-4" />
+              ) : (
+                <span className="font-medium text-slate-900">
+                  {shippingAmount === null ? 'Calculated at next step' : shippingAmount === 0 ? 'Free' : `$${shippingAmount.toFixed(2)}`}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Estimated Sales Tax</span>
+              {quoteLoading ? (
+                <Spinner className="size-4" />
+              ) : (
+                <span className="font-medium text-slate-900">
+                  {taxAmount === null ? 'Calculated at next step' : `$${taxAmount.toFixed(2)}`}
+                </span>
+              )}
+            </div>
           </div>
           <div className="mt-2 border-t-2 border-slate-200 pt-4 text-right">
             <p className="text-lg font-bold text-slate-900">Total: ${total.toFixed(2)}</p>
@@ -301,6 +407,28 @@ function CheckoutForm() {
             </div>
           </div>
 
+          <div className="space-y-2 border-t border-slate-200 pt-4">
+            <div className="flex items-center justify-between gap-4">
+              <Label>Shipping Method</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={runQuote}
+                disabled={!addressReadyForQuote || quoteLoading}
+              >
+                Calculate Shipping &amp; Taxes
+              </Button>
+            </div>
+            <ShippingOptions
+              options={quote?.options ?? null}
+              selectedId={selectedShippingId}
+              onSelect={setSelectedShippingId}
+              loading={quoteLoading}
+              error={quoteError}
+            />
+          </div>
+
           <h2 className="border-b border-slate-200 pb-2 pt-2 text-lg font-semibold text-slate-900">Payment Information</h2>
 
           <div className="space-y-1.5">
@@ -330,11 +458,15 @@ function CheckoutForm() {
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{submitError}</div>
           ) : null}
 
+          {!readyToPay ? (
+            <p className="text-center text-xs text-slate-500">Select a shipping method above to unlock payment.</p>
+          ) : null}
+
           <Button
             type="submit"
             className="w-full"
             size="lg"
-            disabled={!stripe || loading}
+            disabled={!stripe || loading || !readyToPay}
           >
             {loading ? 'Processing...' : `Pay $${total.toFixed(2)}`}
           </Button>

@@ -99,7 +99,8 @@ export default function Cart() {
             <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
             <div className="mt-5 space-y-3 border-b border-slate-100 pb-5 text-sm">
               <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-medium text-slate-900">${total.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-500"><span>Shipping</span><span className="font-medium text-emerald-700">Free</span></div>
+              <div className="flex justify-between text-slate-500"><span>Shipping</span><span className="font-medium text-slate-500">Calculated at next step</span></div>
+              <div className="flex justify-between text-slate-500"><span>Estimated Sales Tax</span><span className="font-medium text-slate-500">Calculated at next step</span></div>
             </div>
             <div className="flex items-baseline justify-between py-5"><span className="font-semibold text-slate-900">Estimated total</span><span className="text-2xl font-semibold tracking-tight text-slate-900">${total.toFixed(2)}</span></div>
             {!checkoutsEnabled ? (
