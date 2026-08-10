@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { supabase } from '../config/supabase'
-import { siteSettingsService } from '../services/supabaseService'
+import { siteSettingsService, adminSettingsService } from '../services/supabaseService'
 import { useSiteSettingsStore } from '../store/index'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +17,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { toastManager } from '@/components/ui/toast'
 import PageHeader, { PageHeaderStats } from '@/components/PageHeader'
 
@@ -58,6 +65,9 @@ export default function SalesPage() {
   const [salesLoadError, setSalesLoadError] = useState('')
   const { checkoutsEnabled, setCheckoutsEnabled } = useSiteSettingsStore()
   const [checkoutToggleLoading, setCheckoutToggleLoading] = useState(false)
+  const [showEditEvent, setShowEditEvent] = useState(false)
+  const [editEventForm, setEditEventForm] = useState(initialEventForm())
+  const [editEventLoading, setEditEventLoading] = useState(false)
 
   const handleToggleCheckouts = async () => {
     setCheckoutToggleLoading(true)
@@ -168,6 +178,52 @@ export default function SalesPage() {
     fetchEvents()
   }
 
+  const openEditEvent = () => {
+    setEditEventForm({
+      name: selectedEvent.name || '',
+      address: selectedEvent.address || '',
+      date: selectedEvent.date || '',
+    })
+    setShowEditEvent(true)
+  }
+
+  const handleUpdateEvent = async (e) => {
+    e.preventDefault()
+    setEditEventLoading(true)
+
+    const { data, error } = await supabase
+      .from('events')
+      .update({
+        name: editEventForm.name,
+        address: editEventForm.address,
+        date: editEventForm.date,
+      })
+      .eq('id', selectedEvent.id)
+      .select()
+      .single()
+
+    setEditEventLoading(false)
+
+    if (error) {
+      console.error(error)
+      toastManager.add({
+        title: 'Event not updated',
+        description: "Couldn't update this event. Try again.",
+        type: 'error',
+      })
+      return
+    }
+
+    setSelectedEvent((current) => ({ ...current, ...data }))
+    setEvents((current) => current.map((event) => (event.id === data.id ? data : event)))
+    setShowEditEvent(false)
+    toastManager.add({
+      title: 'Event updated',
+      description: 'Event details were updated successfully.',
+      type: 'success',
+    })
+  }
+
   const handleItemChange = (index, field, value) => {
     setSaleItems((current) =>
       current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item))
@@ -275,6 +331,28 @@ export default function SalesPage() {
     }
 
     fetchInventory()
+
+    // Only newly logged sales credit buying power - editing an existing
+    // sale afterward doesn't re-trigger this, to avoid double-counting the
+    // same sale's revenue.
+    if (!editingSaleId) {
+      const revenue = payload.items.reduce(
+        (sum, item) => sum + item.sold_price * item.quantity,
+        0
+      )
+      if (revenue > 0) {
+        try {
+          await adminSettingsService.adjustBuyingPower(revenue)
+        } catch (err) {
+          console.error(err)
+          toastManager.add({
+            title: 'Buying power not updated',
+            description: "Sale was logged, but buying power couldn't be updated automatically.",
+            type: 'warning',
+          })
+        }
+      }
+    }
 
     setSaleWarning(stockSyncFailures.length > 0)
     setSaleSuccess(
@@ -557,11 +635,61 @@ export default function SalesPage() {
         title={selectedEvent.name}
         subtitle={`${selectedEvent.address} • ${selectedEvent.date}`}
         actions={
-          <Button variant="secondary" type="button" onClick={() => setSelectedEvent(null)}>
-            Back to Dashboard
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" type="button" onClick={openEditEvent}>
+              Edit Event
+            </Button>
+            <Button variant="secondary" type="button" onClick={() => setSelectedEvent(null)}>
+              Back to Dashboard
+            </Button>
+          </div>
         }
       />
+
+      <Dialog open={showEditEvent} onOpenChange={setShowEditEvent}>
+        <DialogContent>
+          <DialogTitle>Edit Event</DialogTitle>
+          <DialogDescription>Update this event&apos;s details.</DialogDescription>
+          <form className="flex flex-col gap-3" onSubmit={handleUpdateEvent}>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-event-name">Event Name</Label>
+              <Input
+                id="edit-event-name"
+                value={editEventForm.name}
+                onChange={(e) => setEditEventForm((current) => ({ ...current, name: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-event-date">Date</Label>
+              <Input
+                id="edit-event-date"
+                type="date"
+                value={editEventForm.date}
+                onChange={(e) => setEditEventForm((current) => ({ ...current, date: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-event-address">Address</Label>
+              <Input
+                id="edit-event-address"
+                value={editEventForm.address}
+                onChange={(e) => setEditEventForm((current) => ({ ...current, address: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <DialogClose asChild>
+                <Button variant="outline" type="button">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={editEventLoading}>
+                {editEventLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid items-start gap-6 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">

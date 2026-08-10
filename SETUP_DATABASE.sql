@@ -137,6 +137,57 @@ INSERT INTO site_settings (id, checkouts_enabled)
 VALUES (1, true)
 ON CONFLICT (id) DO NOTHING;
 
+-- Admin settings table - like site_settings above, a single global row
+-- (id = 1), but for figures that are financial/admin-only (starting with
+-- buying power) and must never be readable by signed-out visitors or
+-- regular customers, unlike site_settings which is intentionally public-read.
+CREATE TABLE IF NOT EXISTS admin_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  buying_power NUMERIC(12, 2) NOT NULL DEFAULT 600,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO admin_settings (id, buying_power)
+VALUES (1, 600)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can manage admin settings" ON admin_settings;
+CREATE POLICY "Admins can manage admin settings"
+  ON admin_settings FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin));
+
+-- Atomically adds (or subtracts, for a negative delta) to buying_power, so
+-- two near-simultaneous inventory buys or sales can't race and clobber each
+-- other the way a client-side read-then-write would. SECURITY DEFINER lets
+-- it bypass RLS to do the update, so it re-checks is_admin itself.
+CREATE OR REPLACE FUNCTION public.adjust_buying_power(delta NUMERIC)
+RETURNS admin_settings
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  result admin_settings;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  UPDATE admin_settings
+  SET buying_power = buying_power + delta, updated_at = NOW()
+  WHERE id = 1
+  RETURNING * INTO result;
+
+  RETURN result;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.adjust_buying_power(NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.adjust_buying_power(NUMERIC) TO authenticated;
+
 -- Profiles table - one row per auth.users row, holds the admin flag.
 -- The admin flag is never writable by the client (no INSERT/UPDATE policy
 -- for regular users below), so it can only be granted by the site owner

@@ -329,6 +329,41 @@ export const siteSettingsService = {
   },
 }
 
+// ============ ADMIN SETTINGS ============
+export const adminSettingsService = {
+  // Get the single global admin-only config row (buying power, etc.)
+  get: async () => {
+    const { data, error } = await supabase
+      .from('admin_settings')
+      .select('*')
+      .eq('id', 1)
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  // Atomically adds (positive) or subtracts (negative) from buying power via
+  // the adjust_buying_power RPC, instead of a client-side read-then-write
+  // which could race with another concurrent adjustment.
+  adjustBuyingPower: async (delta) => {
+    const { data, error } = await supabase.rpc('adjust_buying_power', { delta })
+    if (error) throw error
+    return data
+  },
+
+  // Manual override - sets buying power to an exact value.
+  setBuyingPower: async (value) => {
+    const { data, error } = await supabase
+      .from('admin_settings')
+      .update({ buying_power: value, updated_at: new Date().toISOString() })
+      .eq('id', 1)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+}
+
 // ============ ORDER ITEMS ============
 export const orderItemsService = {
   // Create order items (bulk insert)

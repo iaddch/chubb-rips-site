@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { supabase } from "../config/supabase";
+import { adminSettingsService } from "../services/supabaseService";
 import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -61,6 +69,56 @@ export default function InventoryPage() {
     const [success, setSuccess] = useState("");
     const [listLoading, setListLoading] = useState(true);
     const [listError, setListError] = useState("");
+    const [buyingPower, setBuyingPower] = useState(0);
+    const [buyingPowerLoading, setBuyingPowerLoading] = useState(true);
+    const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+    const [adjustValue, setAdjustValue] = useState("");
+    const [adjustLoading, setAdjustLoading] = useState(false);
+
+    const fetchBuyingPower = async () => {
+        setBuyingPowerLoading(true);
+        try {
+            const settings = await adminSettingsService.get();
+            setBuyingPower(Number(settings.buying_power || 0));
+        } catch (err) {
+            console.error(err);
+        }
+        setBuyingPowerLoading(false);
+    };
+
+    useEffect(() => {
+        fetchBuyingPower();
+    }, []);
+
+    const openAdjustDialog = () => {
+        setAdjustValue(String(buyingPower));
+        setShowAdjustDialog(true);
+    };
+
+    const handleAdjustBuyingPower = async (e) => {
+        e.preventDefault();
+        setAdjustLoading(true);
+        try {
+            const updated = await adminSettingsService.setBuyingPower(
+                Number(adjustValue),
+            );
+            setBuyingPower(Number(updated.buying_power));
+            setShowAdjustDialog(false);
+            toastManager.add({
+                title: "Buying power updated",
+                description: `Buying power set to $${Number(updated.buying_power).toFixed(2)}.`,
+                type: "success",
+            });
+        } catch (err) {
+            console.error(err);
+            toastManager.add({
+                title: "Update failed",
+                description: "Couldn't update buying power. Try again.",
+                type: "error",
+            });
+        }
+        setAdjustLoading(false);
+    };
 
     const fetchInventory = async () => {
         setListLoading(true);
@@ -160,6 +218,29 @@ export default function InventoryPage() {
                 : `${itemValues.name} was added to inventory.`,
             type: "success",
         });
+
+        // Only newly added items draw down buying power - editing an
+        // existing item's qty/price afterward doesn't re-trigger this, to
+        // avoid double-counting the same purchase.
+        if (!editingItemId) {
+            const cost = itemValues.qty * itemValues.price_bought_at;
+            if (cost > 0) {
+                try {
+                    const updated =
+                        await adminSettingsService.adjustBuyingPower(-cost);
+                    setBuyingPower(Number(updated.buying_power));
+                } catch (err) {
+                    console.error(err);
+                    toastManager.add({
+                        title: "Buying power not updated",
+                        description:
+                            "Item was saved, but buying power couldn't be adjusted automatically.",
+                        type: "warning",
+                    });
+                }
+            }
+        }
+
         setForm(initialForm());
         setEditingItemId(null);
         fetchInventory();
@@ -663,6 +744,26 @@ export default function InventoryPage() {
                         </span>
                     </div>
                     <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                        <div className="col-span-2 flex items-center justify-between rounded-xl bg-indigo-50 p-3">
+                            <div>
+                                <strong className="block text-lg font-semibold text-slate-900">
+                                    {buyingPowerLoading
+                                        ? "…"
+                                        : `$${buyingPower.toFixed(2)}`}
+                                </strong>
+                                <span className="mt-1 block text-xs text-slate-500">
+                                    Buying Power
+                                </span>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                type="button"
+                                onClick={openAdjustDialog}
+                            >
+                                Adjust
+                            </Button>
+                        </div>
                         <div className="rounded-xl bg-muted p-3">
                             <strong className="block text-lg font-semibold text-slate-900">
                                 {totalQuantity}
@@ -698,6 +799,48 @@ export default function InventoryPage() {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
+                <DialogContent>
+                    <DialogTitle>Adjust Buying Power</DialogTitle>
+                    <DialogDescription>
+                        Manually set the current buying power balance.
+                    </DialogDescription>
+                    <form
+                        className="flex flex-col gap-4"
+                        onSubmit={handleAdjustBuyingPower}
+                    >
+                        <div>
+                            <Label
+                                className="mb-1.5 block text-slate-900"
+                                htmlFor="buying-power-value"
+                            >
+                                New Amount
+                            </Label>
+                            <Input
+                                id="buying-power-value"
+                                type="number"
+                                step="0.01"
+                                value={adjustValue}
+                                onChange={(e) =>
+                                    setAdjustValue(e.target.value)
+                                }
+                                required
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <DialogClose asChild>
+                                <Button variant="outline" type="button">
+                                    Cancel
+                                </Button>
+                            </DialogClose>
+                            <Button type="submit" disabled={adjustLoading}>
+                                {adjustLoading ? "Saving..." : "Save"}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </section>
     );
 }
