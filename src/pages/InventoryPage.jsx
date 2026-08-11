@@ -179,6 +179,10 @@ export default function InventoryPage() {
         setError("");
         setSuccess("");
 
+        const originalItem = editingItemId
+            ? inventoryItems.find((item) => item.id === editingItemId)
+            : null;
+
         const itemValues = {
             name: form.name,
             type: form.type,
@@ -219,25 +223,29 @@ export default function InventoryPage() {
             type: "success",
         });
 
-        // Only newly added items draw down buying power - editing an
-        // existing item's qty/price afterward doesn't re-trigger this, to
-        // avoid double-counting the same purchase.
-        if (!editingItemId) {
-            const cost = itemValues.qty * itemValues.price_bought_at;
-            if (cost > 0) {
-                try {
-                    const updated =
-                        await adminSettingsService.adjustBuyingPower(-cost);
-                    setBuyingPower(Number(updated.buying_power));
-                } catch (err) {
-                    console.error(err);
-                    toastManager.add({
-                        title: "Buying power not updated",
-                        description:
-                            "Item was saved, but buying power couldn't be adjusted automatically.",
-                        type: "warning",
-                    });
-                }
+        // New items draw down buying power by their full cost. Edited items
+        // only draw down (or refund) the *change* in cost, so raising an
+        // item's qty spends more buying power and lowering it refunds the
+        // difference, without double-counting the portion that didn't change.
+        const costDelta = editingItemId
+            ? itemValues.qty * itemValues.price_bought_at -
+              Number(originalItem?.qty || 0) *
+                  Number(originalItem?.price_bought_at || 0)
+            : itemValues.qty * itemValues.price_bought_at;
+
+        if (costDelta !== 0) {
+            try {
+                const updated =
+                    await adminSettingsService.adjustBuyingPower(-costDelta);
+                setBuyingPower(Number(updated.buying_power));
+            } catch (err) {
+                console.error(err);
+                toastManager.add({
+                    title: "Buying power not updated",
+                    description:
+                        "Item was saved, but buying power couldn't be adjusted automatically.",
+                    type: "warning",
+                });
             }
         }
 
@@ -291,6 +299,23 @@ export default function InventoryPage() {
             description: `${item.name} was removed from inventory.`,
             type: "success",
         });
+
+        // Removing an item frees up the buying power that was tied up in it.
+        const refund = Number(item.qty || 0) * Number(item.price_bought_at || 0);
+        if (refund > 0) {
+            try {
+                const updated = await adminSettingsService.adjustBuyingPower(refund);
+                setBuyingPower(Number(updated.buying_power));
+            } catch (err) {
+                console.error(err);
+                toastManager.add({
+                    title: "Buying power not updated",
+                    description:
+                        "Item was removed, but buying power couldn't be adjusted automatically.",
+                    type: "warning",
+                });
+            }
+        }
     };
 
     const pieData = useMemo(() => {
